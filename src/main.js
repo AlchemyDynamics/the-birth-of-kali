@@ -137,7 +137,7 @@ function updateOpening(dt){
  const glow=.06+.94*smooth(0,2,t);
  const atmosphere=smooth(.5,3,shotTime)*(1-smooth(15,18,shotTime));openingDust.material.opacity=atmosphere*.8;openingHaze.material.opacity=atmosphere*.2;
  for(let i=0;i<240;i++){const a=i*2.39996,r=.3+((i*71)%239)/65;openingDustData[i*3]=openingOrigin.x+Math.cos(a+time*.025)*r;openingDustData[i*3+1]=openingOrigin.y+Math.sin(a*1.7)*r+Math.sin(time*.22+i)*.15;openingDustData[i*3+2]=openingOrigin.z+Math.sin(a)*r;}openingDustGeo.attributes.position.needsUpdate=true;
- if(revealTime<5){$('#caption').textContent=NARRATION.sweetness;narrator.say(NARRATION.sweetness);}else if(shotTime>=7.1&&t<9){$('#caption').textContent=NARRATION.delicious;narrator.say(NARRATION.delicious);}else if(t>=2&&t<5.4){$('#caption').textContent=NARRATION.discovery;narrator.say(NARRATION.discovery);}else if(t>=9.3&&t<12.8){$('#caption').textContent=NARRATION.firstMeal;narrator.say(NARRATION.firstMeal);}else $('#caption').textContent='';
+ if(t>=2&&t<5.4){$('#caption').textContent=NARRATION.discovery;narrator.say(NARRATION.discovery);}else if(t>=9.3&&t<11.3){$('#caption').textContent=NARRATION.firstMeal;narrator.say(NARRATION.firstMeal);}else if(t>=11.3&&t<15){$('#caption').textContent=NARRATION.sweetness;narrator.say(NARRATION.sweetness);}else $('#caption').textContent='';
  for(const other of kali.arms){if(other===arm)continue;
   const crowd=1-smooth(3,7,t),a=other.angle;
   const resting=new T.Vector3(Math.cos(a)*1.2,-5,-2+Math.sin(a)*.7);
