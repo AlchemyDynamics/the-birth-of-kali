@@ -1,2 +1,43 @@
-# the-birth-of-kali
-A procedural cosmic octopus game — a playable prelude to Dreamwalkers.
+# The Birth of Kali
+
+A playable procedural 3D prelude to **Dreamwalkers**. Explore a water-like cosmic void as Kali, gather drifting blue lights, grow a nebula and star inside her mantle, and keep feeding the black hole that forms when the star collapses.
+
+## Play locally
+
+Run `npm start` (or `node server.mjs`) and open http://127.0.0.1:4173/ in a desktop browser with WebGL 2. No dependency installation is needed: Three.js and the recorded narration are included.
+
+Click **Enter the void** to begin the opening cinematic. Headphones, a keyboard, and a mouse are recommended.
+
+| Control | Action |
+|---|---|
+| Mouse | Orbit and aim; center the pointer to hold the view |
+| W / S | Swim forward / backward |
+| A / D | Strafe |
+| Q / E | Descend / ascend |
+| Space or Shift | Jet toward the pointer |
+| Mouse wheel | Adjust camera distance |
+| P or Escape | Pause / resume |
+| M | Toggle sound |
+| R | Restart |
+| ? | Show controls |
+
+Tentacles automatically catch nearby lights. Stop swimming to eat them; moving interrupts feeding while caught lights remain attached. Meals take 1–2 seconds, with staggered batches of up to three. Nebula, star, and black-hole stages begin at 8, 24, and 56 lights. Play continues after the collapse cinematic.
+
+## GitHub Pages
+
+This is a static browser game. In repository **Settings → Pages**, choose **Deploy from a branch**, then **main** and **/(root)**. The `.nojekyll` file serves the included modules and assets directly. Relative URLs support the repository subdirectory used by GitHub Pages.
+
+The hosted game needs no API keys or backend service. Narration is included as prerecorded MP3 files.
+
+## Development
+
+- `src/` — procedural creature, shaders, movement, feeding, camera, and audio.
+- `assets/narration/` — recorded voice lines.
+- `vendor/` — locally included Three.js modules and its license.
+- `npm test` — simulation checks.
+
+The creature uses procedural pose deformation and texture-based skin relief; the water-like movement is an artistic simulation. Larger displays use an adaptive render resolution to reduce GPU load.
+
+## Credits
+
+Created for Dreamwalkers. Rendering uses Three.js; its MIT license is included in `vendor/THREE-LICENSE.txt`. Narration was generated using ElevenLabs. No license for the original game or its assets is granted by the included third-party license.

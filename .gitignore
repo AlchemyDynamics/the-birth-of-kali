@@ -1,0 +1,12 @@
+# Ignore local research, generated screenshots, credentials, and tooling output.
+references/
+release/
+node_modules/
+.env
+.env.*
+*.log
+.codex/
+.agents/
+scripts/generate-narration.mjs
+tests/*.png
+tests/*.webm
