@@ -6,7 +6,7 @@ export function createInnerCosmos(canvas,label){
  return {draw(time,food,collapse,holeScale){
   ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,size,size);ctx.translate(90,90);
   const black=collapse>=.65,star=food>=24&&!black,nebula=food>=8&&!star&&!black;
-  const title=black?'SINGULARITY':star?(collapse>0?'COLLAPSING STAR':'BLUE STAR'):nebula?'NEBULA':food?'FIRST LIGHT':'DORMANT';
+  const title=black?'SINGULARITY':star?(collapse>0?'COLLAPSING STAR':'BLUE SUPERGIANT'):nebula?'NEBULA':food?'FIRST LIGHT':'DORMANT';
   const description=`${title.toLowerCase()}, ${food} lights consumed`;
   if(description!==lastLabel){label.textContent=title;canvas.setAttribute('aria-label',description);lastLabel=description;}
   ctx.strokeStyle='rgba(87,153,190,.13)';ctx.lineWidth=.7;ctx.beginPath();ctx.arc(0,0,78,0,Math.PI*2);ctx.stroke();

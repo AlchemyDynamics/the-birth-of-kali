@@ -97,10 +97,13 @@ function setStage(){
  star:['IV / A BLUE SUPERGIANT','Growing power','Keep feeding. Even a star has a limit.'],
  singularity:['V / THE BIRTH OF KALI','Singularity','Feed the newborn singularity. Every swallowed star makes it grow.']};
  const t=texts[p];$('#chapter').textContent=t[0];$('#stage-name').textContent=t[1];$('#objective').textContent=t[2];
- if(p!==phase){if(p==='awakening'&&!opening)say('It’s so… warm.');if(p==='nebula')say('Within her, the light began to gather.');if(p==='star'){say('And in the endless dark, a star was born.',9);audio.tone(329.63,6,.14);}if(p!=='singularity'&&!opening)narrator.say(t[2]);phase=p;}
+ if(p!==phase){if(p==='awakening'&&!opening)say('It’s so… warm.');if(p==='nebula')say('Within her, the light began to gather.');if(p!=='singularity'&&p!=='star'&&!opening)narrator.say(t[2]);phase=p;}
  $('#count').textContent=String(food).padStart(2,'0');
 }
-function consume(w){if(food>=56&&!freeplay)return;food++;audio.eat(food);setStage();if(food===1)nextSpawn=time+2;if(food===56&&!ended){collapseTime=0;narrator.clear();document.body.classList.add('cinematic');audio.collapse();keys.clear();}}
+let starTime=-1,starEnded=false;
+function canSwim(){return !(starTime>=0&&!starEnded)&&(collapseTime<0||freeplay);}
+function consume(w){if(!canSwim()||food>=56&&!freeplay)return;food++;audio.eat(food);setStage();if(food===1)nextSpawn=time+2;if(food===24&&!starEnded){starTime=0;narrator.clear();audio.tone(329.63,6,.10);document.body.classList.add('cinematic');$('#hud').hidden=true;keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);}
+if(food===56&&!ended){collapseTime=0;narrator.clear();document.body.classList.add('cinematic');$('#hud').hidden=true;audio.collapse();keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;}}
 function begin(){
  if(started)return;if(audio.enabled)audio.init();started=true;opening=true;openingTime=0;firstSpawned=true;
  player.set(0,0,0);kali.group.position.copy(player);kali.group.quaternion.identity();swimPose.identity();bodyYaw=0;cameraAnchor.copy(player);
@@ -215,10 +218,10 @@ function updateWisps(dt){
    const movingInput=['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE'].some(k=>keys.has(k));
    const settled=dashTime===0&&velocity.length()<.45&&!movingInput&&!kali.arms.some(a=>a.grabPoint);
    settledTime=settled?settledTime+dt:0;
-   if(collapseTime<0||freeplay){const path=new T.Line3(previousPlayer,player);for(const w of wisps){if(w.eaten||w.owner!==null||time-w.born<2)continue;path.closestPointToPoint(w.position,true,tmp);if(tmp.distanceTo(w.position)<=REACH){const arm=captureLight(kali.arms,w);if(arm){arm.grabPoint=w.position.clone();arm.grabTime=0;arm.grabLight=w;collected++;audio.capture();}}}}
-   const feeders=feedingArms(kali.arms,settledTime>.35&&(collapseTime<0||freeplay));
+   if(canSwim()){const path=new T.Line3(previousPlayer,player);for(const w of wisps){if(w.eaten||w.owner!==null||time-w.born<2)continue;path.closestPointToPoint(w.position,true,tmp);if(tmp.distanceTo(w.position)<=REACH){const arm=captureLight(kali.arms,w);if(arm){arm.grabPoint=w.position.clone();arm.grabTime=0;arm.grabLight=w;collected++;audio.capture();}}}}
+   const feeders=feedingArms(kali.arms,settledTime>.35&&(canSwim()));
    for(const arm of kali.arms){
-     arm.feeding=feeders.includes(arm);
+     arm.feeding=canSwim()&&feeders.includes(arm);
      arm.feedBlend=T.MathUtils.lerp(arm.feedBlend||0,arm.feeding?1:0,1-Math.exp(-dt*6));
      if(arm.target){const eaten=advanceFeeding(arm,dt,arm.feeding);if(eaten){consume(eaten);nextMeal(arm);}}
      const carried=[...(arm.target?[arm.target]:[]),...(arm.cargo||[])];
@@ -230,12 +233,25 @@ function updateWisps(dt){
  for(let i=0;i<wispLights.length;i++){const w=near[i],l=wispLights[i];l.intensity=w?w.sprite.material.opacity*(w.first?42:18)*(w.brightness||1):0;if(w)l.position.copy(w.position);}
  let si=0;for(const w of wisps){for(let j=0;j<24&&si<1400;j++,si++){const u=j/24,a=w.seed+j*2.399+time*.23,r=.05+u*.48;snowPos[si*3]=w.position.x+Math.sin(a)*r;snowPos[si*3+1]=w.position.y+u*1.4;snowPos[si*3+2]=w.position.z+Math.cos(a)*r;const b=(1-u)*w.sprite.material.opacity;snowColor.set([b*.1,b*.42,b*.9],si*3);}}snowGeo.setDrawRange(0,si);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.color.needsUpdate=true;
  const fieldLimit=Math.min(28,MAX_WISPS+Math.floor(food/8)*3),batch=6;
- if(started&&food>0&&(collapseTime<0||freeplay)&&time>nextSpawn){if(wisps.length<=fieldLimit-batch)cluster();nextSpawn=time+SPAWN_INTERVAL;}
- starfield.update(time,dt,food,player,p=>spawnWisp(p),collapseTime<0||freeplay?Math.max(0,fieldLimit-wisps.length):0);
+ if(started&&food>0&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch)cluster();nextSpawn=time+SPAWN_INTERVAL;}
+ starfield.update(time,dt,food,player,p=>spawnWisp(p),canSwim()?Math.max(0,fieldLimit-wisps.length):0);
+}
+function updateStarCinematic(dt){
+ starTime+=dt;const t=starTime;
+ const line=t<4?NARRATION.ignition:t<9?NARRATION.giant:'';
+ $('#caption').textContent=line;if(line)narrator.say(line);
+ kali.core.getWorldPosition(look);
+ const angle=-.7+t*.10,dist=T.MathUtils.lerp(7,5.2,smooth(0,6,t));
+ desiredCamera.set(Math.sin(angle)*dist,1.3+Math.sin(t*.25)*.35,Math.cos(angle)*dist).add(look);
+ if(t>=11){starEnded=true;keys.clear();pointer.set(0,0);dashQueued=false;cameraAnchor.copy(player);
+  camera.getWorldDirection(facing);yaw=Math.atan2(-facing.x,-facing.z);pitch=Math.asin(T.MathUtils.clamp(facing.y,-1,1));
+  document.body.classList.remove('cinematic');$('#caption').textContent='';$('#hud').hidden=false;nextSpawn=time+2;
+  say(NARRATION.star,8);
+ }
 }
 function updateCinematic(dt){
  collapseTime+=dt;velocity.multiplyScalar(Math.exp(-dt*2));const t=collapseTime;
- const c=t<4?'A blue supergiant. A heart made of stolen light.':t<8?'Still, she hungered.':t<12?'Until even light could no longer escape.':t<17?'And within her… unfathomable darkness.':'';$('#caption').textContent=c;narrator.say(c);
+ const c=t<5?NARRATION.hungered:t<10?NARRATION.escape:t<17?NARRATION.darkness:'';$('#caption').textContent=c;narrator.say(c);
  const angle=(t*.12),dist=T.MathUtils.lerp(12,7,smooth(0,7,t));kali.core.getWorldPosition(look);desiredCamera.set(Math.sin(angle)*dist,2.4+Math.sin(t*.2),Math.cos(angle)*dist).add(look);
  const flash=Math.exp(-Math.pow((t-9.7)*3,2))*.8;$('#flash').style.opacity=flash;
  shock.position.copy(look);shock.quaternion.copy(camera.quaternion);shock.scale.setScalar(1+Math.max(0,t-9.7)*8);shock.material.opacity=t>9.7?Math.max(0,1-(t-9.7)/3)*.6:0;
@@ -256,20 +272,21 @@ function frame(now){
  if(time>5&&renderQuality.sample(frameMs))resizeRendering();
  time+=dt;if(started)age+=dt;
  if(opening){updateOpening(dt);return;}
- if(started&&(collapseTime<0||freeplay))updateMovement(dt);
+ if(started&&(canSwim()))updateMovement(dt);
  if(!started){kali.group.position.set(3.7,0,-1);kali.group.rotation.set(.12,-.4,.18);}
- const collapsing=collapseTime>=0&&!ended;
+ const collapsing=collapseTime>=0&&!ended,igniting=starTime>=0&&!starEnded,cinematic=collapsing||igniting;
  // Let the body surge ahead of a trailing position anchor; view direction still follows the mouse.
  const spinTrail=jetBoost>1?(dashTime>0?1:recoveryTime/JET_RECOVERY):0;
  const followRate=dashTime>0?(spinTrail?2.2:4.2):recoveryTime>0?5+7*(1-recoveryTime/JET_RECOVERY)-2*spinTrail:12;
  cameraAnchor.lerp(player,1-Math.exp(-dt*followRate));
  tmp.copy(cameraAnchor).sub(player).clampLength(0,3+3*spinTrail);cameraAnchor.copy(player).add(tmp);
- if(collapsing)updateCinematic(dt);
+ if(igniting)updateStarCinematic(dt);
+ else if(collapsing)updateCinematic(dt);
  else{desiredCamera.set(1.8,.9,zoom).applyEuler(new T.Euler(pitch,yaw,0,'YXZ')).add(cameraAnchor);look.copy(desiredCamera).addScaledVector(facing,60);if(!started){desiredCamera.set(0,2.3,17);look.set(0,-.3,0);}if(ended&&!freeplay){desiredCamera.set(5,3,12).add(player);look.copy(player).add(new T.Vector3(-2,0,0));}}
- camera.position.lerp(desiredCamera,1-Math.exp(-dt*(collapsing?1.4:8)));if(started&&!collapsing&&(!ended||freeplay))look.copy(camera.position).addScaledVector(facing,60);camera.lookAt(look);
+ camera.position.lerp(desiredCamera,1-Math.exp(-dt*(cinematic?1.4:8)));if(started&&!cinematic&&(!ended||freeplay))look.copy(camera.position).addScaledVector(facing,60);camera.lookAt(look);
  if(started&&!firstSpawned&&age>2){firstSpawned=true;const forward=camera.getWorldDirection(new T.Vector3());spawnWisp(camera.position.clone().addScaledVector(forward,zoom+JET_DISTANCE*4),true);}
  const collapse=collapseTime<0?0:Math.min(1,collapseTime/15);
- kali.update(time,dt,food,pulse,velocity.length(),collapse,dashTime>0?1:smooth(0,JET_RECOVERY,recoveryTime),mantlePressureFor(dashTime,recoveryTime,pulse));if(started)updateWisps(dt);
+ kali.update(time,dt,food,pulse,velocity.length(),collapse,dashTime>0?1:smooth(0,JET_RECOVERY,recoveryTime),mantlePressureFor(dashTime,recoveryTime,pulse),0,igniting?smooth(0,5,starTime):1);if(started)updateWisps(dt);
  if(collapseTime>=0){kali.core.getWorldQuaternion(kali.photon.quaternion);kali.photon.quaternion.invert().multiply(camera.quaternion);}
  $('#message').style.opacity=time<messageUntil?'1':'0';
  jetParticles.material.opacity=food>0?.25:0;
@@ -282,7 +299,7 @@ function frame(now){
 }
 camera.position.set(0,2.3,17);requestAnimationFrame(frame);
 // Read-only telemetry makes full-loop smoke tests possible without bypassing feeding.
-window.kaliDemo={get state(){return {started,opening,openingTime,paused,food,phase:phaseFor(food),rollActive,rollAngle,rollTarget,jetBoost,rollCount,jetsSinceRoll,nextRollJet,travelJets,travelClusters,backgroundStars:starfield.count,cameraDistance:zoom,cameraLag:cameraAnchor.distanceTo(player),cameraPosition:camera.position.toArray(),bodyQuaternion:kali.group.quaternion.toArray(),blackHoleScale:kali.hole.scale.x,nebulaVisible:kali.nebula.visible,arms:kali.arms.length,activeArms:kali.arms.filter(a=>a.target).length,captured:wisps.filter(w=>w.owner!==null&&!w.eaten).length,collected,mealProgress:kali.arms.map(a=>a.elapsed),feeding:kali.arms.filter(a=>a.feeding).length,wisps:wisps.length,wispDistances:wisps.map(w=>w.position.distanceTo(player)),wispScreens:wisps.map(w=>w.position.clone().project(camera).toArray()),jetDistance:JET_DISTANCE,cameraForward:camera.getWorldDirection(new T.Vector3()).toArray(),yaw,pitch,dashTime,recoveryTime,upright:new T.Vector3(0,1,0).applyQuaternion(kali.group.quaternion).y,cameraHeight:camera.position.y-player.y,bumps:0,skinGlow:kali.mantle.material.emissive.b,armSpread:kali.arms.reduce((s,a)=>s+Math.hypot(a.tip.x,a.tip.z),0)/8,position:player.toArray(),velocity:velocity.length(),collapseTime,ended,freeplay,renderCalls:renderer.info.render.calls};}};
+window.kaliDemo={get state(){return {started,opening,openingTime,starTime,starEnded,paused,food,phase:phaseFor(food),rollActive,rollAngle,rollTarget,jetBoost,rollCount,jetsSinceRoll,nextRollJet,travelJets,travelClusters,backgroundStars:starfield.count,cameraDistance:zoom,cameraLag:cameraAnchor.distanceTo(player),cameraPosition:camera.position.toArray(),bodyQuaternion:kali.group.quaternion.toArray(),blackHoleScale:kali.hole.scale.x,nebulaVisible:kali.nebula.visible,arms:kali.arms.length,activeArms:kali.arms.filter(a=>a.target).length,captured:wisps.filter(w=>w.owner!==null&&!w.eaten).length,collected,mealProgress:kali.arms.map(a=>a.elapsed),feeding:kali.arms.filter(a=>a.feeding).length,wisps:wisps.length,wispDistances:wisps.map(w=>w.position.distanceTo(player)),wispScreens:wisps.map(w=>w.position.clone().project(camera).toArray()),jetDistance:JET_DISTANCE,cameraForward:camera.getWorldDirection(new T.Vector3()).toArray(),yaw,pitch,dashTime,recoveryTime,upright:new T.Vector3(0,1,0).applyQuaternion(kali.group.quaternion).y,cameraHeight:camera.position.y-player.y,bumps:0,skinGlow:kali.mantle.material.emissive.b,armSpread:kali.arms.reduce((s,a)=>s+Math.hypot(a.tip.x,a.tip.z),0)/8,position:player.toArray(),velocity:velocity.length(),collapseTime,ended,freeplay,renderCalls:renderer.info.render.calls};}};
 if(attractMode)begin();
 
 

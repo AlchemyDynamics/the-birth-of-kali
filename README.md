@@ -21,7 +21,7 @@ Click **Enter the void** to begin the opening cinematic. Headphones, a keyboard,
 | R | Restart |
 | ? | Show controls |
 
-Tentacles automatically catch nearby lights. Stop swimming to eat them; moving interrupts feeding while caught lights remain attached. Meals take 1–2 seconds, with staggered batches of up to three. Nebula, star, and black-hole stages begin at 8, 24, and 56 lights. Play continues after the collapse cinematic.
+Tentacles automatically catch nearby lights. Stop swimming to eat them; moving interrupts feeding while caught lights remain attached. Meals take 1–2 seconds, with staggered batches of up to three. Nebula, star, and black-hole stages begin at 8, 24, and 56 lights. At 24 lights, a separate Blue Supergiant ignition cinematic plays, then control returns for further feeding. At 56 lights, a second cinematic shows the collapse into a singularity. Play continues afterward.
 
 ## GitHub Pages
 

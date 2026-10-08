@@ -90,7 +90,7 @@ export function createKali(){
  const disk=new T.Mesh(new T.PlaneGeometry(3.5,3.5),diskMat);disk.rotation.x=-1.05;disk.rotation.y=.25;disk.visible=false;disk.renderOrder=6;core.add(disk);
  const photon=new T.Mesh(new T.TorusGeometry(.675,.012,8,100),new T.MeshBasicMaterial({color:0x369ddd,transparent:true,blending:T.AdditiveBlending,depthTest:false}));photon.visible=false;photon.renderOrder=8;core.add(photon);
  let mantleRelax=1;
- function update(time,dt,food,pulse,speed,collapse=0,streamline=0,mantlePressure=-pulse*.32,flush=0){
+ function update(time,dt,food,pulse,speed,collapse=0,streamline=0,mantlePressure=-pulse*.32,flush=0,stellarReveal=1){
    const targetRelax=1-streamline;
    mantleRelax=T.MathUtils.lerp(mantleRelax,targetRelax,1-Math.exp(-Math.min(dt,.1)*(targetRelax<mantleRelax?8:1.8)));
    mantleSurface(core.position,0,0,0,time,mantlePressure,mantleRelax);core.position.y+=1.45;
@@ -218,9 +218,9 @@ export function createKali(){
    skinLight.intensity=(food===0?0:9)+flush*18;
    skinLight.position.copy(core.position);skinLight.position.z+=1;
    nebula.visible=food>=8&&collapse<.65;nebula.rotation.y=Math.sin(time*.13)*.15;nebula.scale.set(.82+.05*Math.sin(time*.5),.86+.05*Math.cos(time*.4),.9+.04*Math.sin(time*.3));cloudMat.uniforms.time.value=time;cloudMat.uniforms.opacity.value=(.65+.35*smooth(8,18,food))*(1-smooth(.3,.65,collapse));
-   const starOn=food>=24;star.visible=starOn&&collapse<.65;starMaterial.uniforms.time.value=time;starMaterial.uniforms.power.value=1+collapse*3;
+   const starOn=food>=24;star.visible=starOn&&collapse<.65;starMaterial.uniforms.time.value=time;starMaterial.uniforms.power.value=(1+collapse*3)*(.3+.7*stellarReveal);
    let radius=.24+smooth(24,56,food)*.43;radius*=1+.035*Math.sin(time*4);if(collapse>0)radius*=collapse<.28?1+collapse*1.4:Math.max(.01,1-(collapse-.28)/.37);
-   star.scale.setScalar(radius);halo.material.opacity=starOn?(collapse>.65?.1:.55):smooth(8,24,food)*.17;halo.scale.setScalar(starOn?radius*8:2);
+   radius*=.08+.92*stellarReveal;star.scale.setScalar(radius);halo.material.opacity=starOn?(collapse>.65?.1:.55):smooth(8,24,food)*.17;halo.scale.setScalar(starOn?radius*8:2);
    light.intensity=food===0?0:1+warmth*12;if(collapse>.65)light.intensity=4;
    const black=collapse>=.65,seedScale=.045+.135*smooth(.65,1,collapse)+1.02*(1-Math.exp(-Math.max(0,food-56)/60));hole.scale.setScalar(seedScale);disk.scale.setScalar(seedScale);photon.scale.setScalar(seedScale);
    hole.visible=disk.visible=photon.visible=black;diskMat.uniforms.time.value=time;diskMat.uniforms.opacity.value=smooth(.65,.72,collapse)*.48;photon.material.opacity=smooth(.65,.72,collapse);photon.quaternion.copy(group.quaternion).invert();
