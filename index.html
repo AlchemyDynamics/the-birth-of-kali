@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#000000"><title>The Birth of Kali — Dreamwalkers</title>
+<meta name="theme-color" content="#000000"><title>Within the Darkness... — Dreamwalkers</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='20' fill='black' stroke='%234bbcff' stroke-width='2'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 <script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/addons/"}}</script>
 </head>
 <body>
-<canvas id="world" aria-label="The Birth of Kali, a three dimensional cosmic swimming game"></canvas>
+<canvas id="world" aria-label="Within the Darkness..., a three dimensional cosmic swimming game"></canvas>
 <div id="vignette"></div><div id="flash"></div>
 <header><a id="wordmark" href="#" aria-label="Dreamwalkers">DREAMWALKERS<span>GENESIS / 001</span></a><div class="tools"><button id="sound" title="Toggle sound" aria-label="Toggle sound">SOUND <span>ON</span></button><button id="help" title="Controls">?</button><button id="pause" title="Pause">Ⅱ</button></div></header>
 <main id="intro">
-  <h1><span>The Birth of</span>Kali</h1>
+  <h1><span>Within the</span>Darkness...</h1>
   <p>She had existed in a timeless void.<br>Untouched by the light...</p>
   <button id="begin" class="primary">Enter the void <span>↗</span></button>
   <div class="intro-note">A PLAYABLE PRELUDE TO DREAMWALKERS</div>
@@ -25,7 +25,7 @@
   <div id="hint"><kbd>MOUSE</kbd> look around <b>·</b> <kbd>W</kbd> swim forward <b>·</b> <kbd>SPACE</kbd> jet toward pointer <b>·</b> center pointer to hold view</div>
 </section>
 <div id="cinema-top"></div><div id="cinema-bottom"></div><div id="caption"></div>
-<dialog id="controls"><div class="eyebrow">BECOME THE CURRENT</div><h2>Moving through nothing.</h2><p>Pass through light to collect it. Settle to eat up to three lights together, each held by a different arm. Moving pauses feeding; captured lights stay attached. Kali’s eight arms investigate nearby wisps, curl around them, and carry them to her mouth automatically.</p><dl><dt>W / S</dt><dd>Swim forward / backward</dd><dt>A / D</dt><dd>Swim left / right</dd><dt>Q / E</dt><dd>Descend / rise</dd><dt>Space / Shift</dt><dd>Press for each jet; ready when burst ends. Re-jet during the glide.</dd><dt>Move the mouse</dt><dd>Orbit around Kali; center the pointer to stop the camera</dd><dt>Arrow keys</dt><dd>Orbit the camera without a mouse</dd><dt>Mouse wheel</dt><dd>Adjust camera distance</dd><dt>P / Escape</dt><dd>Pause / resume</dd><dt>M</dt><dd>Sound on / off</dd><dt>R</dt><dd>Restart the journey</dd></dl><p class="muted">One ember awakens her skin. Eight begin a nebula. Twenty-four ignite a star. Fifty-six bring the collapse.</p><button class="primary" id="close-help">Return to the void <span>↗</span></button></dialog>
+<dialog id="controls"><div class="eyebrow">BECOME THE CURRENT</div><h2>Moving through nothing.</h2><p>Pass through light to collect it. Settle to eat up to three lights together, each held by a different arm. Moving pauses feeding; captured lights stay attached. Her eight arms investigate nearby wisps, curl around them, and carry them to her mouth automatically.</p><dl><dt>W / S</dt><dd>Swim forward / backward</dd><dt>A / D</dt><dd>Swim left / right</dd><dt>Q / E</dt><dd>Descend / rise</dd><dt>Space / Shift</dt><dd>Press for each jet; ready when burst ends. Re-jet during the glide.</dd><dt>Move the mouse</dt><dd>Orbit around her; center the pointer to stop the camera</dd><dt>Arrow keys</dt><dd>Orbit the camera without a mouse</dd><dt>Mouse wheel</dt><dd>Adjust camera distance</dd><dt>P / Escape</dt><dd>Pause / resume</dd><dt>M</dt><dd>Sound on / off</dd><dt>R</dt><dd>Restart the journey</dd></dl><p class="muted">One ember awakens her skin. Eight begin a nebula. Twenty-four ignite a star. Fifty-six bring the collapse.</p><button class="primary" id="close-help">Return to the void <span>↗</span></button></dialog>
 <section id="paused" hidden><div class="eyebrow">TIME HOLDS ITS BREATH</div><h2>Suspended.</h2><button class="primary" id="resume">Continue <span>↗</span></button><button class="text-button" id="restart">Begin again</button></section>
 <section id="ending" hidden><div class="eyebrow">DREAMWALKERS / THE FIRST BECOMING</div><h2>The darkness<br>has a hunger.</h2><p>A star was born within her.<br>And even a star could not be enough.</p><button class="primary" id="continue">Remain in the void <span>↗</span></button><button class="text-button" id="again">Witness the birth again</button></section>
 <div id="error" hidden></div>

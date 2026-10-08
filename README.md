@@ -1,6 +1,6 @@
-# The Birth of Kali
+# Within the Darkness...
 
-A playable procedural 3D prelude to **Dreamwalkers**. Explore a water-like cosmic void as Kali, gather drifting blue lights, grow a nebula and star inside her mantle, and keep feeding the black hole that forms when the star collapses.
+A playable procedural 3D prelude to **Dreamwalkers**. Explore a water-like cosmic void as an unnamed cosmic octopus, gather drifting blue lights, grow a nebula and star inside her mantle, and keep feeding the black hole that forms when the star collapses.
 
 ## Play locally
 
