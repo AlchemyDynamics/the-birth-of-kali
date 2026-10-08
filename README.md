@@ -41,3 +41,9 @@ The creature uses procedural pose deformation and texture-based skin relief; the
 ## Credits
 
 Created for Dreamwalkers. Rendering uses Three.js; its MIT license is included in `vendor/THREE-LICENSE.txt`. Narration was generated using ElevenLabs. No license for the original game or its assets is granted by the included third-party license.
+
+## Harmonic light clusters
+
+Each physical cluster receives a coordinated set of pitches from D-major pentatonic (D, E, F-sharp, A, B), spanning D4–D6. Sets use D major, B minor, D6, Bm7, Dsus2, and Asus4. Pairs use open intervals; larger sets add chord tones and octave doublings. Successive chords share at least two pitch classes, and lights keep their assigned notes when captured and swallowed. Larger groups use quieter individual voices.
+
+Theory references: [Open Music Theory: Collections](https://viva.pressbooks.pub/openmusictheory/chapter/collections/), [Music Theory for the 21st-Century Classroom: Sus Chords](https://musictheory.pugetsound.edu/mt21c/SimpleSusChords.html). Run `node --test tests/harmony.test.mjs` for the pitch and voicing checks.

@@ -6,6 +6,7 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {createKali,glowTexture} from './creature.js';
 import {Soundscape} from './audio.js';
+import {HarmonicField} from './harmony.js';
 import {Narrator} from './narration.js';
 import {createInnerCosmos} from './inner-cosmos.js';
 import {NARRATION} from './narration-lines.js';
@@ -68,25 +69,34 @@ function spawnTravelLights(){
  // Recycle only unclaimed lights when the field is full; carried meals stay attached.
  const loose=wisps.filter(w=>w.owner===null&&!w.eaten).sort((a,b)=>b.position.distanceToSquared(player)-a.position.distanceToSquared(player));
  for(let i=0;i<Math.max(0,loose.length+positions.length-28);i++){const w=loose[i];scene.remove(w.sprite);w.sprite.material.dispose();w.center.geometry.dispose();w.center.material.dispose();wisps.splice(wisps.indexOf(w),1);}
- for(const position of positions)spawnWisp(position);
+ spawnHarmonicLights(positions);
  travelClusters++;pendingTravelLights=false;
 }
 const openingDustGeo=new T.BufferGeometry(),openingDustData=new Float32Array(240*3);
 const openingDust=new T.Points(openingDustGeo,new T.PointsMaterial({map:tex,color:0x72baff,size:.035,transparent:true,opacity:0,depthWrite:false,blending:T.AdditiveBlending}));openingDustGeo.setAttribute('position',new T.BufferAttribute(openingDustData,3));openingDust.frustumCulled=false;scene.add(openingDust);
 const openingHaze=new T.Sprite(new T.SpriteMaterial({map:tex,color:0x2355b8,transparent:true,opacity:0,depthWrite:false,blending:T.AdditiveBlending}));openingHaze.scale.set(8,10,1);openingHaze.position.copy(openingOrigin).add(new T.Vector3(0,2,-3));scene.add(openingHaze);
-const audio=new Soundscape(),narrator=new Narrator();
+const audio=new Soundscape(),narrator=new Narrator(),harmony=new HarmonicField();
 const innerCosmos=createInnerCosmos($('#inner-cosmos'),$('#cosmos-stage'));
 const shock=new T.Mesh(new T.TorusGeometry(1,.025,8,128),new T.MeshBasicMaterial({color:0x59b9ff,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false}));scene.add(shock);
 const jetGeo=new T.BufferGeometry(),jetArr=new Float32Array(150*3),jetVel=new Float32Array(150*3),jetLife=new Float32Array(150);jetGeo.setAttribute('position',new T.BufferAttribute(jetArr,3));const jetParticles=new T.Points(jetGeo,new T.PointsMaterial({color:0x1c5c92,size:.055,map:tex,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false}));scene.add(jetParticles);let jetIndex=0;
 const direction=new T.Vector3(),tmp=new T.Vector3(),local=new T.Vector3(),desiredCamera=new T.Vector3(),look=new T.Vector3(),rot=new T.Quaternion();
-function spawnWisp(pos,first=false){
+function spawnHarmonicLights(positions){
+ const remaining=new Set(positions);
+ while(remaining.size){
+  const group=[remaining.values().next().value];remaining.delete(group[0]);
+  // Assign a whole chord to each physical cluster, including close pairs.
+  for(let i=0;i<group.length;i++)for(const p of remaining){if(p.distanceTo(group[i])<4){group.push(p);remaining.delete(p);}}
+  const notes=harmony.next(group.length);group.forEach((position,i)=>spawnWisp(position,false,notes[i]));
+ }
+}
+function spawnWisp(pos,first=false,music=null){
  const sprite=new T.Sprite(wispMat.clone());sprite.position.copy(pos);sprite.scale.setScalar(first?1.2:.8);sprite.material.opacity=0;scene.add(sprite);
  const center=new T.Mesh(new T.SphereGeometry(first?.022:.016,8,6),new T.MeshBasicMaterial({color:0x6baeff}));sprite.add(center);
- const w={sprite,base:pos.clone(),position:sprite.position,owner:null,eaten:false,born:time,seed:spawnSerial++*2.39996,first,center};wisps.push(w);return w;
+ const w={...(music||(first?{note:0,noteGain:1,chord:'D major',harmonyId:0}:harmony.single())),sprite,base:pos.clone(),position:sprite.position,owner:null,eaten:false,born:time,seed:spawnSerial++*2.39996,first,center};wisps.push(w);return w;
 }
 function cluster(){
  const forward=new T.Vector3(0,0,-1).applyEuler(new T.Euler(pitch,yaw,0,'YXZ'));
- for(const position of travelLightPositions(player,forward))spawnWisp(position);
+ spawnHarmonicLights(travelLightPositions(player,forward));
 }
 function say(text,seconds=7){narrator.say(text);$('#message').textContent=text;messageUntil=time+seconds;$('#message').style.opacity=1;}
 function setStage(){
@@ -102,7 +112,7 @@ function setStage(){
 }
 let starTime=-1,starEnded=false;
 function canSwim(){return !(starTime>=0&&!starEnded)&&(collapseTime<0||freeplay);}
-function consume(w){if(!canSwim()||food>=56&&!freeplay)return;food++;audio.eat(food);setStage();if(food===1)nextSpawn=time+2;if(food===24&&!starEnded){starTime=0;narrator.clear();audio.tone(329.63,6,.10);document.body.classList.add('cinematic');$('#hud').hidden=true;keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);}
+function consume(w){if(!canSwim()||food>=56&&!freeplay)return;food++;audio.eat(w.note,w.noteGain);setStage();if(food===1)nextSpawn=time+2;if(food===24&&!starEnded){starTime=0;narrator.clear();audio.tone(329.63,6,.10);document.body.classList.add('cinematic');$('#hud').hidden=true;keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);}
 if(food===56&&!ended){collapseTime=0;narrator.clear();document.body.classList.add('cinematic');$('#hud').hidden=true;audio.collapse();keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;}}
 function begin(){
  if(started)return;if(audio.enabled)audio.init();started=true;opening=true;openingTime=0;firstSpawned=true;
@@ -125,7 +135,7 @@ function updateOpening(dt){
  if(t<7){const caress=(1-grip)*.23;goal.add(new T.Vector3(Math.cos(t*2)*caress,Math.sin(t*2)*caress,.04));}
  else goal.lerp(openingMouth,meal);
  arm.cinematicGoal=goal;arm.cinematicBlend=reach*(1-smooth(9.4,11.2,t));
- if(t>=6.8&&!openingCaptured){openingCaptured=true;openingLight.owner=arm.index;arm.target=openingLight;collected++;audio.capture();}
+ if(t>=6.8&&!openingCaptured){openingCaptured=true;openingLight.owner=arm.index;arm.target=openingLight;collected++;audio.capture(openingLight.noteGain,openingLight.note);}
  arm.feeding=t>=7&&t<9;arm.elapsed=meal*3.2;
  for(const eye of kali.organicEyes){eye.cinematic.active=true;eye.cinematic.blink=Math.sin(Math.PI*smooth(6,6.65,shotTime))**2;eye.cinematic.dilation=T.MathUtils.lerp(T.MathUtils.lerp(2.3,.65,smooth(5.55,7.3,shotTime)),1,smooth(8,9.5,shotTime));eye.cinematic.reflection=openingEaten?0:glow;}
  const flush=openingEaten?smooth(9,9.6,t)*(1-smooth(10,12.8,t)):0;
@@ -218,7 +228,7 @@ function updateWisps(dt){
    const movingInput=['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE'].some(k=>keys.has(k));
    const settled=dashTime===0&&velocity.length()<.45&&!movingInput&&!kali.arms.some(a=>a.grabPoint);
    settledTime=settled?settledTime+dt:0;
-   if(canSwim()){const path=new T.Line3(previousPlayer,player);for(const w of wisps){if(w.eaten||w.owner!==null||time-w.born<2)continue;path.closestPointToPoint(w.position,true,tmp);if(tmp.distanceTo(w.position)<=REACH){const arm=captureLight(kali.arms,w);if(arm){arm.grabPoint=w.position.clone();arm.grabTime=0;arm.grabLight=w;collected++;audio.capture();}}}}
+   if(canSwim()){const path=new T.Line3(previousPlayer,player);for(const w of wisps){if(w.eaten||w.owner!==null||time-w.born<2)continue;path.closestPointToPoint(w.position,true,tmp);if(tmp.distanceTo(w.position)<=REACH){const arm=captureLight(kali.arms,w);if(arm){arm.grabPoint=w.position.clone();arm.grabTime=0;arm.grabLight=w;collected++;audio.capture(w.noteGain,w.note);}}}}
    const feeders=feedingArms(kali.arms,settledTime>.35&&(canSwim()));
    for(const arm of kali.arms){
      arm.feeding=canSwim()&&feeders.includes(arm);

@@ -1,12 +1,12 @@
 // D major pentatonic, D4 through D6: open, gentle intervals over two octaves.
-const BELL_SCALE=[0,2,4,7,9,12,14,16,19,21,24];
+import {BELL_SCALE,bellFrequency} from './harmony.js';
 export class Soundscape {
  constructor(){this.enabled=true;this.ctx=null;this.lastNote=-1;this.recentNotes=[];}
  pickNote(){
   const choices=BELL_SCALE.filter(note=>!this.recentNotes.includes(note));
   this.lastNote=choices[Math.floor(Math.random()*choices.length)];
   this.recentNotes.push(this.lastNote);if(this.recentNotes.length>2)this.recentNotes.shift();
-  return 293.6647679174076*Math.pow(2,this.lastNote/12);
+  return bellFrequency(this.lastNote);
  }
  toggle(){this.enabled=!this.enabled;if(this.enabled)this.init();if(this.master)this.master.gain.setTargetAtTime(this.enabled?.09:0,this.ctx.currentTime,.4);return this.enabled;}
  init(){
@@ -26,10 +26,10 @@ export class Soundscape {
   if(!this.enabled||!this.ctx)return;const c=this.ctx,t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(volume,t+.12);g.gain.exponentialRampToValueAtTime(.0001,t+length);o.connect(g).connect(this.master);o.start();o.stop(t+length+.1);o.onended=()=>{o.disconnect();g.disconnect();};
  }
- eat(){this.capture(.55);}
- capture(volumeScale=1){
-  if(!this.enabled||!this.ctx)return;const c=this.ctx,t=c.currentTime,f=this.pickNote();
-  // Random scale tones bloom gently from silence; no ascending collection sequence.
+ eat(note=null,gain=1){this.capture(.55*gain,note);}
+ capture(volumeScale=1,note=null){
+  if(!this.enabled||!this.ctx)return;const c=this.ctx,t=c.currentTime,f=BELL_SCALE.includes(note)?bellFrequency(note):this.pickNote();
+  // Stable wisp pitches let successive captures overlap into their assigned chord.
   const softness=volumeScale*(.9+Math.random()*.1)*Math.pow(293.6647679174076/f,.18);
   for(const [ratio,level,decay,detune] of [[1,.08,3.8,-2],[1,.032,4.1,2],[2.002,.012,2.4,0],[3.01,.003,1.5,0]]){
    const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f*ratio;o.detune.value=detune;
