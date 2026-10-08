@@ -36,7 +36,7 @@ const wisps=[],keys=new Set(),velocity=new T.Vector3(),player=new T.Vector3();
 const cameraAnchor=new T.Vector3();
 const previousPlayer=new T.Vector3();let collected=0,settledTime=0;
 const snowGeo=new T.BufferGeometry(),snowPos=new Float32Array(1400*3),snowColor=new Float32Array(1400*3);snowGeo.setAttribute('position',new T.BufferAttribute(snowPos,3));snowGeo.setAttribute('color',new T.BufferAttribute(snowColor,3));const snow=new T.Points(snowGeo,new T.PointsMaterial({map:tex,size:.12,transparent:true,depthWrite:false,blending:T.AdditiveBlending,vertexColors:true}));snow.frustumCulled=false;scene.add(snow);
-let started=false,paused=false,food=0,time=0,age=0,last=performance.now(),yaw=0,pitch=.08,zoom=9.455875,pulse=0,cooldown=0,nextSpawn=0,collapseTime=-1,ended=false,freeplay=false,drag=false,lastMouse=[0,0],messageUntil=0,phase='first-light',spawnSerial=0;
+let started=false,paused=false,food=0,time=0,age=0,last=performance.now(),yaw=0,pitch=.08,zoom=11.34705,pulse=0,cooldown=0,nextSpawn=0,collapseTime=-1,ended=false,freeplay=false,drag=false,lastMouse=[0,0],messageUntil=0,phase='first-light',spawnSerial=0;
 let opening=false,openingTime=0,openingLight=null,openingCaptured=false,openingEaten=false,openingMealDuration=1+Math.random();
 const openingOrigin=new T.Vector3(3,-1.8,3.5),openingMouth=new T.Vector3(0,-.95,.05);
 let attractMode=new URLSearchParams(location.search).has('autoplay');
