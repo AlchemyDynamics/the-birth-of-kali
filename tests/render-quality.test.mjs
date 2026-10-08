@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {renderPixelRatio,createRenderQuality} from '../src/render-quality.js';
+test('large and high-density screens respect the pixel budget',()=>{for(const [w,h,dpr] of [[1280,720,1],[1920,1080,2],[3840,2160,1],[3840,2160,2],[5120,1440,2]]){const ratio=renderPixelRatio(w,h,dpr);assert.ok(w*h*ratio*ratio<=2800001);assert.ok(ratio<=dpr);}assert.equal(renderPixelRatio(1280,720,1),1);});
+test('quality lowers under sustained load and recovers slowly without oscillation',()=>{const q=createRenderQuality();for(let i=0;i<350;i++)q.sample(33);assert.ok(q.scale>=.65&&q.scale<.8);const low=q.scale;for(let i=0;i<100;i++)q.sample(16);assert.equal(q.scale,low);for(let i=0;i<1800;i++)q.sample(16);assert.ok(q.scale>low);const before=q.scale;q.sample(5000);assert.equal(q.scale,before);});
