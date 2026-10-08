@@ -189,7 +189,9 @@ export function createKali(){
      const attr=arm.mesh.geometry.attributes.position;
      for(let j=0;j<rings;j++){
        const u=j/(rings-1);tangent.copy(points[Math.min(j+1,rings-1)]).sub(points[Math.max(0,j-1)]).normalize();normal.copy(j>0?arm.frames[j-1].normal:dir);normal.addScaledVector(tangent,-normal.dot(tangent));if(normal.lengthSq()<.001)normal.copy(j>0?arm.frames[j-1].side:Z).addScaledVector(tangent,-(j>0?arm.frames[j-1].side:Z).dot(tangent));normal.normalize();side.crossVectors(tangent,normal).normalize();
-       const radius=.43*Math.pow(1-u,1.3)+.017;
+       // Close the final ring to a point; a constant minimum radius left an
+       // open, visibly chopped-off tube at the end of every curled arm.
+       const radius=(.43*Math.pow(1-u,1.3)+.017)*(1-smooth(.88,1,u));
        arm.frames[j].side.copy(side);arm.frames[j].normal.copy(normal);arm.frames[j].radius=radius;
        for(let k=0;k<=sides;k++){const theta=k/sides*TAU;v.copy(points[j]).addScaledVector(side,Math.cos(theta)*radius).addScaledVector(normal,Math.sin(theta)*radius);attr.setXYZ(j*(sides+1)+k,v.x,v.y,v.z);}
      }

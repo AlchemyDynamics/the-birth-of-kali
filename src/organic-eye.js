@@ -23,7 +23,7 @@ export function createOrganicEye(skin,texture,phase=0,papillaMaterial=skin){
  const segments=80,rings=12,vertices=new Float32Array((segments+1)*(rings+1)*3),uvs=new Float32Array((segments+1)*(rings+1)*2),indices=[];
  for(let j=0;j<rings;j++)for(let i=0;i<segments;i++){const k=j*(segments+1)+i;indices.push(k,k+1,k+segments+1,k+1,k+segments+2,k+segments+1);}
  const lidGeo=new T.BufferGeometry();lidGeo.setAttribute('position',new T.BufferAttribute(vertices,3));lidGeo.setAttribute('uv',new T.BufferAttribute(uvs,2));lidGeo.setIndex(indices);
- const lidMaterial=skin.clone();lidMaterial.onBeforeCompile=skin.onBeforeCompile;lidMaterial.customProgramCacheKey=skin.customProgramCacheKey;lidMaterial.color.setHex(0x3b4a61);lidMaterial.side=T.DoubleSide;const lids=new T.Mesh(lidGeo,lidMaterial);group.add(lids);
+ const lidMaterial=skin.clone();lidMaterial.onBeforeCompile=skin.onBeforeCompile;lidMaterial.customProgramCacheKey=skin.customProgramCacheKey;lidMaterial.color.setHex(0x3b4a61);lidMaterial.side=T.DoubleSide;const lids=new T.Mesh(lidGeo,lidMaterial);gaze.add(lids);
  const gazeTarget=new T.Vector2();let previousBlink=-1;
  function update(time,dt=.016){
   const cycle=(time+phase)%8.7,blink=cinematic.active?cinematic.blink:cycle>7.9?Math.sin(Math.PI*Math.min(1,(cycle-7.9)/.65))**2:0,aperture=1-.93*blink;
@@ -32,7 +32,10 @@ export function createOrganicEye(skin,texture,phase=0,papillaMaterial=skin){
   if(Math.abs(blink-previousBlink)<1e-6)return;previousBlink=blink;
   for(let j=0;j<=rings;j++)for(let i=0;i<=segments;i++){const a=i/segments*Math.PI*2,u=j/rings,upper=Math.max(0,Math.sin(a)),irregular=1+.045*Math.sin(a*3+.8)+.025*Math.sin(a*7),innerX=.282*Math.cos(a)*irregular,innerY=(.253*Math.sin(a)*irregular+.014*Math.cos(a))*aperture;
    const x=T.MathUtils.lerp(innerX,.49*Math.cos(a)*(1+.04*Math.sin(a*5)),u),y=T.MathUtils.lerp(innerY,.405*Math.sin(a)+.025,u),z=T.MathUtils.lerp(.351+.085*blink,.07,u)+Math.sin(Math.PI*u)*(.075+upper*.055)+Math.sin(u*Math.PI*6+a*3)*.007*Math.sin(Math.PI*u);
-   const k=j*(segments+1)+i;lidGeo.attributes.position.setXYZ(k,x,y,z);lidGeo.attributes.uv.setXY(k,x+phase,y+.5);
+   // Wrap the closing skin over the convex cornea instead of interpolating
+   // through it. The expanded shell also clears the triangles between rings.
+   const r=Math.hypot(x,y),shell=r<.315?.322+.12*Math.sqrt(Math.max(0,1-r*r/(.315*.315))):0;
+   const k=j*(segments+1)+i;lidGeo.attributes.position.setXYZ(k,x,y,Math.max(z,shell));lidGeo.attributes.uv.setXY(k,x+phase,y+.5);
   }lidGeo.attributes.position.needsUpdate=true;lidGeo.attributes.uv.needsUpdate=true;lidGeo.computeVertexNormals();
  }
  update(0);return {group,iris,update,lids,pupil,gaze,gazeTarget,cinematic,reflectLight,reflection};

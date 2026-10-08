@@ -138,12 +138,9 @@ function updateOpening(dt){
  const atmosphere=smooth(.5,3,shotTime)*(1-smooth(15,18,shotTime));openingDust.material.opacity=atmosphere*.8;openingHaze.material.opacity=atmosphere*.2;
  for(let i=0;i<240;i++){const a=i*2.39996,r=.3+((i*71)%239)/65;openingDustData[i*3]=openingOrigin.x+Math.cos(a+time*.025)*r;openingDustData[i*3+1]=openingOrigin.y+Math.sin(a*1.7)*r+Math.sin(time*.22+i)*.15;openingDustData[i*3+2]=openingOrigin.z+Math.sin(a)*r;}openingDustGeo.attributes.position.needsUpdate=true;
  if(t>=2&&t<5.4){$('#caption').textContent=NARRATION.discovery;narrator.say(NARRATION.discovery);}else if(t>=9.3&&t<11.3){$('#caption').textContent=NARRATION.firstMeal;narrator.say(NARRATION.firstMeal);}else if(t>=11.3&&t<15){$('#caption').textContent=NARRATION.sweetness;narrator.say(NARRATION.sweetness);}else $('#caption').textContent='';
- for(const other of kali.arms){if(other===arm)continue;
-  const crowd=1-smooth(3,7,t),a=other.angle;
-  const resting=new T.Vector3(Math.cos(a)*1.2,-5,-2+Math.sin(a)*.7);
-  const framing=openingOrigin.clone().add(new T.Vector3(Math.cos(a)*(.7+.12*Math.sin(time*.7+a)),Math.sin(a)*.8,-.65+.2*Math.sin(time*.6+a)));
-  other.cinematicGoal=resting.lerp(framing,crowd);other.cinematicBlend=1-smooth(10,13,t);
- }
+ // Preserve each background arm's own radial lane. Pulling all seven tips
+ // around the spark made their thick lengths cross through one another.
+ for(const other of kali.arms){if(other===arm)continue;other.cinematicGoal=null;other.cinematicBlend=0;}
  const goal=openingOrigin.clone();
  if(t<7){const caress=(1-grip)*.23;goal.add(new T.Vector3(Math.cos(t*2)*caress,Math.sin(t*2)*caress,.04));}
  else goal.lerp(openingMouth,meal);
