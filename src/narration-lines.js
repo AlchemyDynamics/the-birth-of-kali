@@ -1,7 +1,7 @@
 export const NARRATION={
  discovery:"Now, what is this?",
  firstMeal:"It's so warm.",
- opening:'She had existed in a timeless void, untouched by the light.',
+ opening:'She had existed in a timeless void, untouched by the light...',
  sweetness:'Within the light, she tasted a delectable sweetness.',
  first:'Approach the lonely blue ember.',
  warm:'It’s so… warm.',
