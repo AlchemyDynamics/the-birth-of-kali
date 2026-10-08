@@ -136,7 +136,7 @@ function updateOpening(dt){
  else goal.lerp(openingMouth,meal);
  arm.cinematicGoal=goal;arm.cinematicBlend=reach*(1-smooth(9.4,11.2,t));
  if(t>=6.8&&!openingCaptured){openingCaptured=true;openingLight.owner=arm.index;arm.target=openingLight;collected++;audio.capture(openingLight.noteGain,openingLight.note);}
- arm.feeding=t>=7&&t<9;arm.elapsed=meal*3.2;arm.mealDuration=openingMealDuration;audio.feedVoice(arm);
+ arm.feeding=t>=7&&t<9;arm.elapsed=meal*3.2;
  for(const eye of kali.organicEyes){eye.cinematic.active=true;eye.cinematic.blink=Math.sin(Math.PI*smooth(6,6.65,shotTime))**2;eye.cinematic.dilation=T.MathUtils.lerp(T.MathUtils.lerp(2.3,.65,smooth(5.55,7.3,shotTime)),1,smooth(8,9.5,shotTime));eye.cinematic.reflection=openingEaten?0:glow;}
  const flush=openingEaten?smooth(9,9.6,t)*(1-smooth(10,12.8,t)):0;
  kali.update(time,dt,food,0,0,0,0,0,flush);kali.group.updateMatrixWorld(true);
@@ -233,8 +233,7 @@ function updateWisps(dt){
    for(const arm of kali.arms){
      arm.feeding=canSwim()&&feeders.includes(arm);
      arm.feedBlend=T.MathUtils.lerp(arm.feedBlend||0,arm.feeding?1:0,1-Math.exp(-dt*6));
-     if(arm.target){const eaten=advanceFeeding(arm,dt,arm.feeding);if(eaten){consume(eaten);nextMeal(arm);arm.feeding=false;}}
-     audio.feedVoice(arm);
+     if(arm.target){const eaten=advanceFeeding(arm,dt,arm.feeding);if(eaten){consume(eaten);nextMeal(arm);}}
      const carried=[...(arm.target?[arm.target]:[]),...(arm.cargo||[])];
      for(let i=0;i<carried.length;i++){const w=carried[i];if(arm.grabLight===w&&arm.grabTime<GRAB_REACH_TIME)continue;const p=i===0?arm.tip:arm.points[Math.max(28,46-i*3)];tmp.copy(p);if(i>0){tmp.x+=Math.sin(time*2+i)*.12;tmp.z+=Math.cos(time*2+i)*.12;}kali.group.localToWorld(tmp);w.position.lerp(tmp,1-Math.exp(-dt*(i===0&&arm.feeding?22:12)));}
    }
@@ -279,7 +278,7 @@ function updateCinematic(dt){
 function frame(now){
  requestAnimationFrame(frame);const frameMs=now-last,dt=Math.min(frameMs/1000,.04);last=now;
  narrator.setPaused(paused||$('#controls').open||document.hidden);
- if(paused||$('#controls').open||document.hidden){for(const arm of kali.arms){if(arm.humVoice){arm.humVoice.stop();arm.humVoice=null;arm.humTarget=null;}}renderQuality.reset();return;}
+ if(paused||$('#controls').open||document.hidden){renderQuality.reset();return;}
  if(time>5&&renderQuality.sample(frameMs))resizeRendering();
  time+=dt;if(started)age+=dt;
  if(opening){updateOpening(dt);return;}

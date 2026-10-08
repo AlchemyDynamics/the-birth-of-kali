@@ -27,7 +27,7 @@ Tentacles automatically catch nearby lights. Stop swimming to eat them; moving i
 
 This is a static browser game. In repository **Settings → Pages**, choose **Deploy from a branch**, then **main** and **/(root)**. The `.nojekyll` file serves the included modules and assets directly. Relative URLs support the repository subdirectory used by GitHub Pages.
 
-The hosted game needs no API keys or backend service. Narration is included as prerecorded MP3 files. Kali also hums each light's pitch during feeding, using a soft synthesized voice with gentle vibrato. Staggered meals overlap into vocal harmonies; movement or pausing fades the humming out.
+The hosted game needs no API keys or backend service. Narration is included as prerecorded MP3 files.
 
 ## Development
 

@@ -27,29 +27,6 @@ export class Soundscape {
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(volume,t+.12);g.gain.exponentialRampToValueAtTime(.0001,t+length);o.connect(g).connect(this.master);o.start();o.stop(t+length+.1);o.onended=()=>{o.disconnect();g.disconnect();};
  }
  eat(note=null,gain=1){this.capture(.55*gain,note);}
- feedVoice(arm){
-  const active=this.enabled&&this.ctx&&arm.feeding&&arm.target&&(arm.feedDelay||0)<=0;
-  if(arm.humVoice&&(!active||arm.humTarget!==arm.target)){arm.humVoice.stop();arm.humVoice=null;arm.humTarget=null;}
-  if(active&&!arm.humVoice){arm.humTarget=arm.target;arm.humVoice=this.hum(arm.target.note,arm.target.noteGain,Math.max(.25,(1-arm.elapsed/3.2)*(arm.mealDuration||1.5)));}
- }
- hum(note=0,gain=1,duration=1.5){
-  if(!this.enabled||!this.ctx)return null;
-  const c=this.ctx,t=c.currentTime,f=bellFrequency(BELL_SCALE.includes(note)?note:0);
-  // A gently voiced, closed-mouth "mm": glottal harmonics, nasal resonance,
-  // a small breath-like swell, and delayed natural vibrato. No extra downloads.
-  const voice=c.createOscillator(),real=new Float32Array(25),imag=new Float32Array(25);
-  for(let i=1;i<imag.length;i++)imag[i]=Math.pow(i,-1.65)*(i%2?1:.65);
-  voice.setPeriodicWave(c.createPeriodicWave(real,imag));voice.frequency.value=f;
-  voice.detune.setValueAtTime(-18,t);voice.detune.linearRampToValueAtTime(0,t+.16);
-  const body=c.createBiquadFilter();body.type='peaking';body.frequency.value=950;body.Q.value=1.1;body.gain.value=4;
-  const soft=c.createBiquadFilter();soft.type='lowpass';soft.frequency.value=Math.max(1500,f*1.6);soft.Q.value=.45;
-  const envelope=c.createGain(),level=.19*gain*Math.pow(293.6647679174076/f,.2),end=t+duration;
-  envelope.gain.setValueAtTime(0,t);envelope.gain.linearRampToValueAtTime(level*.7,t+.12);envelope.gain.linearRampToValueAtTime(level,t+Math.min(.35,duration*.5));envelope.gain.setTargetAtTime(level*.75,t+duration*.6,.16);envelope.gain.linearRampToValueAtTime(0,end+.16);
-  const vibrato=c.createOscillator(),depth=c.createGain();vibrato.frequency.value=4.7+Math.random()*.5;depth.gain.setValueAtTime(0,t);depth.gain.linearRampToValueAtTime(7,t+.4);vibrato.connect(depth).connect(voice.detune);
-  voice.connect(body).connect(soft).connect(envelope).connect(this.master);voice.start(t);vibrato.start(t);voice.stop(end+.2);vibrato.stop(end+.2);
-  voice.onended=()=>{for(const n of [voice,body,soft,envelope,vibrato,depth])n.disconnect();};
-  let stopped=false;return {frequency:f,stop(){if(stopped)return;stopped=true;const now=c.currentTime;envelope.gain.cancelAndHoldAtTime(now);envelope.gain.linearRampToValueAtTime(0,now+.09);try{voice.stop(now+.1);vibrato.stop(now+.1);}catch{}}};
- }
  capture(volumeScale=1,note=null){
   if(!this.enabled||!this.ctx)return;const c=this.ctx,t=c.currentTime,f=BELL_SCALE.includes(note)?bellFrequency(note):this.pickNote();
   // Stable wisp pitches let successive captures overlap into their assigned chord.
