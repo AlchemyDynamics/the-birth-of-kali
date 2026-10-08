@@ -1,8 +1,9 @@
 export const NARRATION={
- discovery:"What's this?",
- delicious:'It smells delicious.',
+ discovery:"Now, what is this?",
+ delicious:"It's so warm.",
  firstMeal:"Mmm, it's so... warm.",
- opening:'For an eternity, there had been nothing.',
+ opening:'She had existed in a timeless void, untouched by the light.',
+ sweetness:'Within the light, she tasted a delectable sweetness.',
  first:'Approach the lonely blue ember.',
  warm:'It’s so… warm.',
  hunger:'Investigate the light within your void.',

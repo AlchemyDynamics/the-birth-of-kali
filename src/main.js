@@ -125,12 +125,25 @@ function begin(){
  narrator.clear();keys.clear();pointer.set(0,0);
 }
 function updateOpening(dt){
- openingTime+=dt;const shotTime=openingTime,rawTime=shotTime<5?shotTime:shotTime<8?5:shotTime-3,t=rawTime<=7?rawTime:rawTime<7+openingMealDuration?7+(rawTime-7)*2/openingMealDuration:rawTime+2-openingMealDuration,arm=kali.arms[0],reach=smooth(2.5,4.6,t),grip=smooth(5.4,6.8,t),meal=smooth(7,9,t);
+ openingTime+=dt;
+ // Let the first words exist in complete darkness before any light is revealed.
+ if(openingTime<8){
+  const caption=$('#caption');caption.classList.add('prologue');caption.textContent=NARRATION.opening;
+  caption.style.opacity=smooth(0,1.2,openingTime)*(1-smooth(6.8,8,openingTime));
+  narrator.say(NARRATION.opening);renderer.clear();return;
+ }
+ $('#caption').classList.remove('prologue');$('#caption').style.opacity='';
+ const revealTime=openingTime-8,shotTime=revealTime<5?revealTime*.4:revealTime-3,rawTime=shotTime<5?shotTime:shotTime<8?5:shotTime-3,t=rawTime<=7?rawTime:rawTime<7+openingMealDuration?7+(rawTime-7)*2/openingMealDuration:rawTime+2-openingMealDuration,arm=kali.arms[0],reach=smooth(1.2,4.6,t),grip=smooth(5.4,6.8,t),meal=smooth(7,9,t);
  const glow=.06+.94*smooth(0,2,t);
  const atmosphere=smooth(.5,3,shotTime)*(1-smooth(15,18,shotTime));openingDust.material.opacity=atmosphere*.8;openingHaze.material.opacity=atmosphere*.2;
  for(let i=0;i<240;i++){const a=i*2.39996,r=.3+((i*71)%239)/65;openingDustData[i*3]=openingOrigin.x+Math.cos(a+time*.025)*r;openingDustData[i*3+1]=openingOrigin.y+Math.sin(a*1.7)*r+Math.sin(time*.22+i)*.15;openingDustData[i*3+2]=openingOrigin.z+Math.sin(a)*r;}openingDustGeo.attributes.position.needsUpdate=true;
- if(shotTime>=7.1&&t<9){$('#caption').textContent=NARRATION.delicious;narrator.say(NARRATION.delicious);}else if(t>=2&&t<5.4){$('#caption').textContent=NARRATION.discovery;narrator.say(NARRATION.discovery);}else if(t>=9.3&&t<12.8){$('#caption').textContent=NARRATION.firstMeal;narrator.say(NARRATION.firstMeal);}else $('#caption').textContent='';
- for(const other of kali.arms){if(other===arm)continue;other.cinematicGoal=new T.Vector3(Math.cos(other.angle)*1.2,-5,-2+Math.sin(other.angle)*.7);other.cinematicBlend=1-smooth(10,13,t);}
+ if(revealTime<5){$('#caption').textContent=NARRATION.sweetness;narrator.say(NARRATION.sweetness);}else if(shotTime>=7.1&&t<9){$('#caption').textContent=NARRATION.delicious;narrator.say(NARRATION.delicious);}else if(t>=2&&t<5.4){$('#caption').textContent=NARRATION.discovery;narrator.say(NARRATION.discovery);}else if(t>=9.3&&t<12.8){$('#caption').textContent=NARRATION.firstMeal;narrator.say(NARRATION.firstMeal);}else $('#caption').textContent='';
+ for(const other of kali.arms){if(other===arm)continue;
+  const crowd=1-smooth(3,7,t),a=other.angle;
+  const resting=new T.Vector3(Math.cos(a)*1.2,-5,-2+Math.sin(a)*.7);
+  const framing=openingOrigin.clone().add(new T.Vector3(Math.cos(a)*(.7+.12*Math.sin(time*.7+a)),Math.sin(a)*.8,-.65+.2*Math.sin(time*.6+a)));
+  other.cinematicGoal=resting.lerp(framing,crowd);other.cinematicBlend=1-smooth(10,13,t);
+ }
  const goal=openingOrigin.clone();
  if(t<7){const caress=(1-grip)*.23;goal.add(new T.Vector3(Math.cos(t*2)*caress,Math.sin(t*2)*caress,.04));}
  else goal.lerp(openingMouth,meal);
@@ -151,7 +164,7 @@ function updateOpening(dt){
  wispLights[1].color.setHex(0x9abfff);wispLights[1].position.copy(openingLight.position).add(new T.Vector3(1,1.8,2));wispLights[1].intensity=glow*14*(1-smooth(12,15,t));
  wispLights[2].color.setHex(0x555dff);wispLights[2].position.set(-2,2,1);wispLights[2].intensity=glow*7*(1-smooth(12,15,t));
  // Establish the ember first; widen for the curious touch, then escort it into the beak.
- const close=openingOrigin.clone().add(new T.Vector3(.1,.08,1.2));
+ const close=openingOrigin.clone().add(new T.Vector3(.1,.08,.95));
  const touch=openingOrigin.clone().add(new T.Vector3(.7,.25,2.3));
  desiredCamera.copy(close).lerp(touch,smooth(2.5,5,t));look.copy(openingOrigin);
  if(t>=7){desiredCamera.copy(goal).add(new T.Vector3(0,-2,2.5));look.copy(goal).lerp(openingMouth,meal*.6);}

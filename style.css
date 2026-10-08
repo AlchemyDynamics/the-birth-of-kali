@@ -6,3 +6,5 @@
 
 /* Keep the mantle display anchored at the lower-right edge of the HUD. */
 footer .essence{margin-left:auto}
+
+#caption.prologue{top:50%;bottom:auto;left:15%;width:70%;transform:translateY(-50%);font:400 clamp(20px,2.3vw,34px)/1.8 Georgia,serif;letter-spacing:.04em;color:#c4d2dd;text-shadow:none;}
