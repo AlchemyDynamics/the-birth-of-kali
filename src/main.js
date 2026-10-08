@@ -103,11 +103,11 @@ function setStage(){
  const p=phaseFor(food);const texts={
  'first-light':['I / THE FIRST LIGHT','Curiosity','Approach the lonely blue ember.'],
  awakening:['II / A TASTE OF CREATION','Hunger','Investigate the light within your void.'],
- nebula:['III / THE LIGHT WITHIN','Becoming','A nebula gathers in your mantle.'],
+ nebula:['III / THE LIGHT WITHIN','Becoming',NARRATION.nebula],
  star:['IV / A BLUE SUPERGIANT','Growing power','Keep feeding. Even a star has a limit.'],
  singularity:['V / THE DARKNESS WITHIN','Singularity','Feed the newborn singularity. Every swallowed star makes it grow.']};
  const t=texts[p];$('#chapter').textContent=t[0];$('#stage-name').textContent=t[1];$('#objective').textContent=t[2];
- if(p!==phase){if(p==='awakening'&&!opening)say('It’s so… warm.');if(p==='nebula')say('Within her, the light began to gather.');if(p!=='singularity'&&p!=='star'&&!opening)narrator.say(t[2]);phase=p;}
+ if(p!==phase){if(p==='awakening'&&!opening)say('It’s so… warm.');if(p==='nebula')say(NARRATION.gathering);if(p!=='singularity'&&p!=='star'&&!opening)narrator.say(t[2]);phase=p;}
  $('#count').textContent=String(food).padStart(2,'0');
 }
 let starTime=-1,starEnded=false;
