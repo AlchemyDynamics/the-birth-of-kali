@@ -68,6 +68,8 @@ function beginJetRoll(){
  if(time-lastJetTime>JET_DURATION+JET_RECOVERY+.25){jetsSinceRoll=0;nextRollJet=4+Math.floor(Math.random()*5);}
  lastJetTime=time;jetsSinceRoll++;rollActive=jetsSinceRoll>=nextRollJet;
  const fueled=rollActive&&starEnded&&food>=IGNITION&&boostHeld()&&starBoost.start();
+ // Make the extra forward light visible even during a short, capped boost.
+ if(fueled)nextSpawn=Math.min(nextSpawn,time+.15);
  jetBoost=fueled?STAR_BOOST_SPEED:1;rollTarget=rollActive?(270+Math.random()*450)*Math.PI/180*(Math.random()<.5?-1:1):0;
  boostRolling=fueled;boostSpin=0;boostAngularSpeed=0;boostCoast=0;
  microJet=rollActive?{active:false}:smallJetRotation();microElapsed=0;if(microJet.active)rollAxis.copy(aimDirection);
@@ -112,7 +114,7 @@ function spawnWisp(pos,first=false,music=null){
  const w={...(music||(first?{note:0,noteGain:1,chord:'D major',harmonyId:0}:harmony.single())),sprite,base:pos.clone(),position:sprite.position,owner:null,eaten:false,born:time,seed:spawnSerial++*2.39996,first,center};wisps.push(w);return w;
 }
 function cluster(){
- const forward=new T.Vector3(0,0,-1).applyEuler(new T.Euler(pitch,yaw,0,'YXZ'));
+ const forward=starBoost.active?aimDirection.clone():new T.Vector3(0,0,-1).applyEuler(new T.Euler(pitch,yaw,0,'YXZ'));
  spawnHarmonicLights(travelLightPositions(player,forward,Math.random,food));
 }
 function say(text,seconds=7){narrator.say(text);$('#message').textContent=text;messageUntil=time+seconds;$('#message').style.opacity=1;}
@@ -250,7 +252,7 @@ function updateMovement(dt){
  // Apply the roll after steering smoothing; carry its final bank into the recovery pose.
  if(rollActive)rollElapsed+=dt;
  if(boostRolling){
-  if(starBoost.active)boostAngularSpeed=T.MathUtils.lerp(boostAngularSpeed,Math.sign(rollTarget)*TAU*1.15,1-Math.exp(-dt*7));
+  if(starBoost.active)boostAngularSpeed=T.MathUtils.lerp(boostAngularSpeed,Math.sign(rollTarget)*TAU*1.15*1.3,1-Math.exp(-dt*7));
   else {boostCoast+=dt;boostAngularSpeed*=Math.exp(-dt*9);}
   boostSpin+=boostAngularSpeed*dt;
  }
@@ -287,7 +289,7 @@ function updateWisps(dt){
  for(let i=0;i<wispLights.length;i++){const w=near[i],l=wispLights[i];l.intensity=w?w.sprite.material.opacity*(w.first?42:18)*(w.brightness||1):0;if(w)l.position.copy(w.position);}
  let si=0;for(const w of wisps){for(let j=0;j<24&&si<1400;j++,si++){const u=j/24,a=w.seed+j*2.399+time*.23,r=.05+u*.48;snowPos[si*3]=w.position.x+Math.sin(a)*r;snowPos[si*3+1]=w.position.y+u*1.4;snowPos[si*3+2]=w.position.z+Math.cos(a)*r;const b=(1-u)*w.sprite.material.opacity;snowColor.set([b*.1,b*.42,b*.9],si*3);}}snowGeo.setDrawRange(0,si);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.color.needsUpdate=true;
  // A formed singularity draws twice the blue-light flow into her void.
- const spawnRate=food>=COLLAPSE?2:1,fieldLimit=Math.min(28,MAX_WISPS+Math.floor(food/8)*3)*spawnRate,batch=6;
+ const spawnRate=(food>=COLLAPSE?2:1)*(starBoost.active?2:1),fieldLimit=Math.min(28,MAX_WISPS+Math.floor(food/8)*3)*spawnRate,batch=6;
  if(started&&food>=2&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch)cluster();nextSpawn=time+(food<14?8:SPAWN_INTERVAL)/spawnRate;}
  starfield.update(time,dt,food,player,(p,room)=>{
   if(room<1)return 0;
