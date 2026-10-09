@@ -126,10 +126,13 @@ export function createKali(){
      }
      if(arm.cinematicGoal){grabLocal=group.worldToLocal(arm.cinematicGoal.clone());grabBlend=arm.cinematicBlend;}
      const a=arm.angle,points=arm.points;const dir=new T.Vector3(Math.cos(a),0,Math.sin(a));
-     // Independent rhythms are confined to the narrow coiled tips.
+     // Each distal arm breathes between a loose sweep and a soft curl.
+     // Slow, unrelated waves avoid eight identical hooks moving in lockstep.
      const phase=arm.index*2.399963;
-     const curlMood=.5+.5*Math.sin(time*(.21+arm.index*.011)+phase);
-     const tipTurn=Math.PI*(1.40+.12*curlMood);
+     const character=.5+.5*Math.sin(phase*1.7);
+     const curlMood=.5+.32*Math.sin(time*(.18+arm.index*.013)+phase)+.18*Math.sin(time*.117+phase*2.3);
+     const tipTurn=Math.PI*(.22+.30*character+.65*curlMood);
+     const tipRoll=.18*Math.sin(time*.23+phase)+.12*Math.sin(time*.137+phase*1.4);
      let normalLength=0;const previousNormal=new T.Vector3();
      const restPrevious=new T.Vector3(),restBefore=new T.Vector3(),tipTangent=new T.Vector3(),tipAxis=new T.Vector3();let tipStep=0;
      // Thick muscular bases lead into traveling waves and coiled distal tips.
@@ -151,9 +154,12 @@ export function createKali(){
        }
        if(j>=35){
          const t=(j-34)/(rings-1-34),turn=t*t*(2-t);
-         // Ease curvature in across the narrow section, not at a single hinge.
-         v.copy(tipTangent).applyAxisAngle(tipAxis,tipTurn*turn);
-         p.copy(restPrevious).addScaledVector(v,tipStep*(1-.55*t*t));
+         // Distribute the bend and gentle three-dimensional drift along the
+         // tip, with zero added curvature at its junction with the thick arm.
+         const ripple=.13*Math.sin(time*.36+phase-t*2.2)*t*t;
+         v.copy(tipTangent).applyAxisAngle(tipAxis,tipTurn*turn+ripple);
+         v.applyAxisAngle(tipTangent,tipRoll*turn);
+         p.copy(restPrevious).addScaledVector(v,tipStep*(1-(.22+.18*character)*t*t));
        }
        restBefore.copy(restPrevious);restPrevious.copy(p);
        // In the body frame the mantle leads along +Y, so the arms trail along -Y.
