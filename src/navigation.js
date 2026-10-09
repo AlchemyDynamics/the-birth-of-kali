@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {discoveryCount,clusterCount} from './progression.js';
 import {JET_DISTANCE,REACH} from './simulation.js';
 
 export function jetAim(ray,player,wisps){
@@ -20,8 +21,8 @@ export function travelLightPositions(player,heading,random=Math.random,food=0){
  const right=new T.Vector3().crossVectors(heading,new T.Vector3(0,1,0));
  if(right.lengthSq()<.001)right.set(1,0,0);
  right.normalize();const up=new T.Vector3().crossVectors(right,heading).normalize(),angle=random()*Math.PI*2;
- const count=(food>=8?2:1)+Math.floor(random()*(food>=8?5:6)),positions=[];
- if(food>=8){
+ const count=discoveryCount(food)||clusterCount(random),positions=[];
+ if(food>=2){
   // Once the nebula forms, every new set is a single reachable chord cluster.
   // Keep the whole set outside the straight jet corridor so it needs steering.
   const distance=JET_DISTANCE*(3.2+random()*1.6),offset=REACH+6+random()*3;

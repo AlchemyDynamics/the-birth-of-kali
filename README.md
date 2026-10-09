@@ -21,7 +21,7 @@ Click **Enter the void** to begin the opening cinematic. Headphones, a keyboard,
 | R | Restart |
 | ? | Show controls |
 
-Tentacles automatically catch nearby lights. Stop swimming to eat them; moving interrupts feeding while caught lights remain attached. Feeding follows a 92 BPM pulse, with melodic swallows on successive beats and chords of up to three notes on the same beat. Nebula, star, and black-hole stages begin at 8, 24, and 56 lights. At 24 lights, a separate Blue Supergiant ignition cinematic plays, then control returns for further feeding. At 56 lights, a second cinematic shows the collapse into a singularity. Play continues afterward.
+Tentacles automatically catch nearby lights. Stop swimming to eat them; moving interrupts feeding while caught lights remain attached. Feeding follows a 92 BPM pulse, with melodic swallows on successive beats and chords of up to three notes on the same beat. Nebula, star, and black-hole stages begin at 8, 150, and 350 lights. At 150 lights, a separate Blue Supergiant ignition cinematic plays, then control returns for further feeding. At 350 lights, a second cinematic shows the collapse into a singularity. Play continues until 500 stars, when a lion’s roar interrupts her. The confrontation ends with a close view inside the mantle at the black hole; press R to restart.
 
 ## GitHub Pages
 
@@ -43,6 +43,8 @@ Feeding composes with the collected pitches: nearby notes form rising and fallin
 ## Credits
 
 Created for Dreamwalkers. Rendering uses Three.js; its MIT license is included in `vendor/THREE-LICENSE.txt`. Narration was generated using ElevenLabs. No license for the original game or its assets is granted by the included third-party license.
+
+The second light fades in over seven seconds at twice normal brightness, about two jets ahead. Completing it restores the white starfield. Blue groups then unfold as 2, 3, 3, and 4 before weighted groups of 2–6 (32%, 28%, 22%, 12%, 6%).
 
 ## Harmonic light clusters
 

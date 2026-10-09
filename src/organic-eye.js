@@ -26,7 +26,7 @@ export function createOrganicEye(skin,texture,phase=0,papillaMaterial=skin){
  const lidMaterial=skin.clone();lidMaterial.onBeforeCompile=skin.onBeforeCompile;lidMaterial.customProgramCacheKey=skin.customProgramCacheKey;lidMaterial.color.setHex(0x3b4a61);lidMaterial.side=T.DoubleSide;const lids=new T.Mesh(lidGeo,lidMaterial);gaze.add(lids);
  const gazeTarget=new T.Vector2();let previousBlink=-1;
  function update(time,dt=.016){
-  const cycle=(time+phase)%8.7,blink=cinematic.active?cinematic.blink:cycle>7.9?Math.sin(Math.PI*Math.min(1,(cycle-7.9)/.65))**2:0,aperture=1-.93*blink;
+  const cycle=(time+phase)%8.7,blink=cinematic.active?cinematic.blink:cycle>7.9?Math.sin(Math.PI*Math.min(1,(cycle-7.9)/.65))**2:0,aperture=1-.999*blink;
   dilation.value=cinematic.active?cinematic.dilation:1;reflection.material.opacity=cinematic.active?cinematic.reflection*(1-blink):0;
   gaze.rotation.y=T.MathUtils.lerp(gaze.rotation.y,gazeTarget.y+.045*Math.sin(time*.63+phase),1-Math.exp(-dt*3));gaze.rotation.x=T.MathUtils.lerp(gaze.rotation.x,gazeTarget.x+.028*Math.sin(time*.47+phase),1-Math.exp(-dt*3));pupil.scale.y=1+.06*Math.sin(time*.7+phase);
   if(Math.abs(blink-previousBlink)<1e-6)return;previousBlink=blink;

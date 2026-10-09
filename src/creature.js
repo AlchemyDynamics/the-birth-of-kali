@@ -1,3 +1,4 @@
+import {IGNITION,COLLAPSE} from './simulation.js';
 import * as T from 'three';
 import {smooth,GRAB_REACH_TIME} from './simulation.js';
 import {createSkinMaps} from './skin.js';
@@ -226,11 +227,11 @@ export function createKali(){
    skinLight.intensity=(food===0?0:9)+flush*18;
    skinLight.position.copy(core.position);skinLight.position.z+=1;
    nebula.visible=food>=8&&collapse<.65;nebula.rotation.y=Math.sin(time*.13)*.15;nebula.scale.set(.82+.05*Math.sin(time*.5),.86+.05*Math.cos(time*.4),.9+.04*Math.sin(time*.3));cloudMat.uniforms.time.value=time;cloudMat.uniforms.opacity.value=(.65+.35*smooth(8,18,food))*(1-smooth(.3,.65,collapse));
-   const starOn=food>=24;star.visible=starOn&&collapse<.65;starMaterial.uniforms.time.value=time;starMaterial.uniforms.power.value=(1+collapse*3)*(.3+.7*stellarReveal);
-   let radius=.24+smooth(24,56,food)*.43;radius*=1+.035*Math.sin(time*4);if(collapse>0)radius*=collapse<.28?1+collapse*1.4:Math.max(.01,1-(collapse-.28)/.37);
-   radius*=.08+.92*stellarReveal;star.scale.setScalar(radius);halo.material.opacity=starOn?(collapse>.65?.1:.55):smooth(8,24,food)*.17;halo.scale.setScalar(starOn?radius*8:2);
+   const starOn=food>=IGNITION;star.visible=starOn&&collapse<.65;starMaterial.uniforms.time.value=time;starMaterial.uniforms.power.value=(1+collapse*3)*(.3+.7*stellarReveal);
+   let radius=.24+smooth(IGNITION,COLLAPSE,food)*.43;radius*=1+.035*Math.sin(time*4);if(collapse>0)radius*=collapse<.28?1+collapse*1.4:Math.max(.01,1-(collapse-.28)/.37);
+   radius*=.08+.92*stellarReveal;star.scale.setScalar(radius);halo.material.opacity=starOn?(collapse>.65?.1:.55):smooth(8,IGNITION,food)*.17;halo.scale.setScalar(starOn?radius*8:2);
    light.intensity=food===0?0:1+warmth*12;if(collapse>.65)light.intensity=4;
-   const black=collapse>=.65,seedScale=.045+.135*smooth(.65,1,collapse)+1.02*(1-Math.exp(-Math.max(0,food-56)/60));hole.scale.setScalar(seedScale);disk.scale.setScalar(seedScale);photon.scale.setScalar(seedScale);
+   const black=collapse>=.65,seedScale=.045+.135*smooth(.65,1,collapse)+1.02*(1-Math.exp(-Math.max(0,food-COLLAPSE)/100));hole.scale.setScalar(seedScale);disk.scale.setScalar(seedScale);photon.scale.setScalar(seedScale);
    hole.visible=disk.visible=photon.visible=black;diskMat.uniforms.time.value=time;diskMat.uniforms.opacity.value=smooth(.65,.72,collapse)*.48;photon.material.opacity=smooth(.65,.72,collapse);photon.quaternion.copy(group.quaternion).invert();
  }
  return {group,arms,core,update,mantle,light,photon,hole,nebula,collar,beak,jaws,eyeGroups,organicEyes};

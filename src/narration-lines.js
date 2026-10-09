@@ -1,4 +1,5 @@
 export const NARRATION={
+ confrontation:'You dare destroy my light!?',
  discovery:"Now, what is this?",
  firstMeal:"It's so warm.",
  opening:'She had existed in a timeless void, untouched by the light...',

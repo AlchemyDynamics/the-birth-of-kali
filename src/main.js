@@ -1,4 +1,6 @@
 import * as T from 'three';
+import {FINAL_STARS,clusterCount} from './progression.js';
+import {FinalScene} from './final-scene.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
 import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -18,7 +20,7 @@ import {nearestPathLight,nearerEye} from './attention.js';
 import {updateHorizonProjection} from './horizon-projection.js';
 import {proximityBrightness} from './papillae.js';
 import {renderPixelRatio,createRenderQuality} from './render-quality.js';
-import {phaseFor,smooth,integrateVelocity,captureLight,nextMeal,advanceFeeding,REACH,steeringRate,SPAWN_DISTANCE,SPAWN_SPREAD,SPAWN_INTERVAL,MAX_WISPS,JET_DISTANCE,JET_SPEED,JET_DURATION,JET_RECOVERY,mantlePressureFor,GRAB_REACH_TIME} from './simulation.js';
+import {IGNITION,COLLAPSE,phaseFor,smooth,integrateVelocity,captureLight,nextMeal,advanceFeeding,REACH,steeringRate,SPAWN_DISTANCE,SPAWN_SPREAD,SPAWN_INTERVAL,MAX_WISPS,JET_DISTANCE,JET_SPEED,JET_DURATION,JET_RECOVERY,mantlePressureFor,GRAB_REACH_TIME} from './simulation.js';
 const $=s=>document.querySelector(s),TAU=Math.PI*2;
 let renderer;
 try{renderer=new T.WebGLRenderer({canvas:$('#world'),antialias:true,powerPreference:'high-performance'});}catch(e){$('#error').hidden=false;$('#error').textContent='This experience needs WebGL 2. Please open it in a desktop browser with hardware acceleration enabled.';throw e;}
@@ -61,12 +63,12 @@ function beginJetRoll(){
 const aimRay=new T.Raycaster(),aimDirection=new T.Vector3(),dashPointer=new T.Vector2();
 const travelHeading=new T.Vector3();let travelJets=0,pendingTravelLights=false,travelClusters=0;
 function recordTravelJet(heading){
- if(food<2)return;
+ if(food<14)return;
  if(travelJets===0||travelHeading.dot(heading)<Math.cos(Math.PI/7.2)){travelHeading.copy(heading);travelJets=1;}else travelJets++;
  if(travelJets===3){travelJets=0;pendingTravelLights=true;}
 }
 function spawnTravelLights(){
- if(food<2){pendingTravelLights=false;return;}
+ if(food<14){pendingTravelLights=false;return;}
  const positions=travelLightPositions(player,travelHeading,Math.random,food);
  // Recycle only unclaimed lights when the field is full; carried meals stay attached.
  const loose=wisps.filter(w=>w.owner===null&&!w.eaten).sort((a,b)=>b.position.distanceToSquared(player)-a.position.distanceToSquared(player));
@@ -77,7 +79,7 @@ function spawnTravelLights(){
 const openingDustGeo=new T.BufferGeometry(),openingDustData=new Float32Array(240*3);
 const openingDust=new T.Points(openingDustGeo,new T.PointsMaterial({map:tex,color:0x72baff,size:.035,transparent:true,opacity:0,depthWrite:false,blending:T.AdditiveBlending}));openingDustGeo.setAttribute('position',new T.BufferAttribute(openingDustData,3));openingDust.frustumCulled=false;scene.add(openingDust);
 const openingHaze=new T.Sprite(new T.SpriteMaterial({map:tex,color:0x2355b8,transparent:true,opacity:0,depthWrite:false,blending:T.AdditiveBlending}));openingHaze.scale.set(8,10,1);openingHaze.position.copy(openingOrigin).add(new T.Vector3(0,2,-3));scene.add(openingHaze);
-const audio=new Soundscape(),narrator=new Narrator(),harmony=new HarmonicField();
+const audio=new Soundscape(),narrator=new Narrator(),harmony=new HarmonicField(),finalScene=new FinalScene();
 const innerCosmos=createInnerCosmos($('#inner-cosmos'),$('#cosmos-stage'));
 const shock=new T.Mesh(new T.TorusGeometry(1,.025,8,128),new T.MeshBasicMaterial({color:0x59b9ff,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false}));scene.add(shock);
 const jetGeo=new T.BufferGeometry(),jetArr=new Float32Array(150*3),jetVel=new Float32Array(150*3),jetLife=new Float32Array(150);jetGeo.setAttribute('position',new T.BufferAttribute(jetArr,3));const jetParticles=new T.Points(jetGeo,new T.PointsMaterial({color:0x1c5c92,size:.055,map:tex,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false}));scene.add(jetParticles);let jetIndex=0;
@@ -110,12 +112,12 @@ function setStage(){
  singularity:['V / THE DARKNESS WITHIN','Singularity','Feed the newborn singularity. Every swallowed star makes it grow.']};
  const t=texts[p];$('#chapter').textContent=t[0];$('#stage-name').textContent=t[1];$('#objective').textContent=t[2];
  if(p!==phase){if(p==='awakening'&&!opening)say('It’s so… warm.');if(p==='nebula')say(NARRATION.gathering);if(p!=='singularity'&&p!=='star'&&!opening)narrator.say(t[2]);phase=p;}
- $('#count').textContent=String(food).padStart(2,'0');
+ $('#count').textContent=`${food} / ${FINAL_STARS}`;
 }
 let starTime=-1,starEnded=false;
-function canSwim(){return !(starTime>=0&&!starEnded)&&(collapseTime<0||freeplay);}
-function consume(w){if(!canSwim()||food>=56&&!freeplay)return;food++;audio.eat(w.note,w.noteGain);setStage();if(food===1)nextSpawn=Infinity;if(food===2){say(NARRATION.secondMeal,5);nextSpawn=time+4;}if(food===24&&!starEnded){starTime=0;narrator.clear();audio.tone(329.63,6,.10);document.body.classList.add('cinematic');$('#hud').hidden=true;keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);}
-if(food===56&&!ended){collapseTime=0;narrator.clear();document.body.classList.add('cinematic');$('#hud').hidden=true;audio.collapse();keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;}}
+function canSwim(){return finalScene.time<0&&!(starTime>=0&&!starEnded)&&(collapseTime<0||freeplay);}
+function consume(w){if(!canSwim()||food>=COLLAPSE&&!freeplay)return;food++;audio.eat(w.note,w.noteGain);setStage();if(food===FINAL_STARS){narrator.clear();finalScene.start(camera,kali);velocity.set(0,0,0);keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;rollActive=false;microJet.active=false;pulse=0;document.body.classList.add('cinematic');$('#hud').hidden=true;return;}if(food===1)nextSpawn=Infinity;if(food===2){say(NARRATION.secondMeal,5);nextSpawn=time+4;}if([4,7,10].includes(food))nextSpawn=time+4;if(food===IGNITION&&!starEnded){starTime=0;narrator.clear();audio.tone(329.63,6,.10);document.body.classList.add('cinematic');$('#hud').hidden=true;keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);}
+if(food===COLLAPSE&&!ended){collapseTime=0;narrator.clear();document.body.classList.add('cinematic');$('#hud').hidden=true;audio.collapse();keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;}}
 function begin(){
  if(started)return;if(audio.enabled)audio.init();started=true;opening=true;openingTime=0;firstSpawned=true;
  player.set(0,0,0);kali.group.position.copy(player);kali.group.quaternion.identity();swimPose.identity();bodyYaw=0;cameraAnchor.copy(player);
@@ -173,7 +175,7 @@ function updateOpening(dt){
  camera.position.lerp(desiredCamera,1-Math.exp(-dt*6));camera.lookAt(look);for(const eye of kali.organicEyes)eye.reflectLight(openingLight.position,camera.position);composer.render();
  if(t>=15){for(const eye of kali.organicEyes){eye.cinematic.active=false;eye.reflection.material.opacity=0;}for(const l of wispLights)l.color.setHex(0x329bff);openingDust.visible=false;openingHaze.visible=false;opening=false;for(const other of kali.arms){other.cinematicGoal=null;other.cinematicBlend=0;}arm.cinematicGoal=null;arm.cinematicBlend=0;arm.elapsed=0;arm.feeding=false;swimPose.copy(kali.group.quaternion);cameraAnchor.copy(player);keys.clear();pointer.set(0,0);dashQueued=false;$('#caption').textContent='';document.body.classList.remove('cinematic');$('#hud').hidden=false;nextSpawn=Infinity;say(NARRATION.hunger);
  const forward=camera.getWorldDirection(new T.Vector3()),above=new T.Vector3(0,1,0).applyQuaternion(camera.quaternion);
- spawnWisp(camera.position.clone().addScaledVector(forward,zoom+JET_DISTANCE*3.5).addScaledVector(above,3));}
+ const second=spawnWisp(player.clone().addScaledVector(forward,JET_DISTANCE*2).addScaledVector(above,3));second.fadeSeconds=7;second.lightGain=2;}
 }
 function setPause(value){if(!started||collapseTime>=0&&!ended)return;paused=value;$('#paused').hidden=!paused;$('#pause').textContent=paused?'▷':'Ⅱ';keys.clear();pointer.set(0,0);dashQueued=false;}
 function reset(){location.href=location.pathname;}
@@ -233,9 +235,9 @@ function updateMovement(dt){
 }
 function updateWisps(dt){
  kali.group.updateMatrixWorld(true);
- for(let i=wisps.length-1;i>=0;i--){const w=wisps[i];if(w.eaten||w.owner===null&&w.position.distanceTo(player)>85){scene.remove(w.sprite);w.sprite.material.dispose();w.center.geometry.dispose();w.center.material.dispose();wisps.splice(i,1);continue;}
-   const born=smooth(w.first?2:0,w.first?6:3,time-w.born);w.sprite.material.opacity=born*(.77+.15*Math.sin(time*1.5+w.seed));w.center.visible=born>.05;
-   const distance=w.position.distanceTo(camera.position),white=smooth(22,90,distance);w.brightness=proximityBrightness(w.position.distanceTo(player));w.sprite.material.color.setRGB(.08+.68*white,.32+.52*white,1).multiplyScalar(w.brightness);w.center.material.color.copy(w.sprite.material.color);
+ for(let i=wisps.length-1;i>=0;i--){const w=wisps[i];if(w.eaten||food>=14&&w.owner===null&&w.position.distanceTo(player)>85){scene.remove(w.sprite);w.sprite.material.dispose();w.center.geometry.dispose();w.center.material.dispose();wisps.splice(i,1);continue;}
+   const born=smooth(w.first?2:0,w.first?6:(w.fadeSeconds||3),time-w.born);w.sprite.material.opacity=born*(.77+.15*Math.sin(time*1.5+w.seed));w.center.visible=born>.05;
+   const distance=w.position.distanceTo(camera.position),white=smooth(22,90,distance);w.brightness=proximityBrightness(w.position.distanceTo(player))*(w.lightGain||1);w.sprite.material.color.setRGB(.08+.68*white,.32+.52*white,1).multiplyScalar(w.brightness);w.center.material.color.copy(w.sprite.material.color);
    if(w.owner===null){w.position.copy(w.base);w.position.x+=Math.sin(time*.22+w.seed)*.55;w.position.y+=Math.sin(time*.33+w.seed)*.55-(time-w.born)*.025;w.position.z+=Math.cos(time*.24+w.seed)*.35;}
  }
  if(age>5){
@@ -257,11 +259,11 @@ function updateWisps(dt){
  for(let i=0;i<wispLights.length;i++){const w=near[i],l=wispLights[i];l.intensity=w?w.sprite.material.opacity*(w.first?42:18)*(w.brightness||1):0;if(w)l.position.copy(w.position);}
  let si=0;for(const w of wisps){for(let j=0;j<24&&si<1400;j++,si++){const u=j/24,a=w.seed+j*2.399+time*.23,r=.05+u*.48;snowPos[si*3]=w.position.x+Math.sin(a)*r;snowPos[si*3+1]=w.position.y+u*1.4;snowPos[si*3+2]=w.position.z+Math.cos(a)*r;const b=(1-u)*w.sprite.material.opacity;snowColor.set([b*.1,b*.42,b*.9],si*3);}}snowGeo.setDrawRange(0,si);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.color.needsUpdate=true;
  const fieldLimit=Math.min(28,MAX_WISPS+Math.floor(food/8)*3),batch=6;
- if(started&&food>=2&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch)cluster();nextSpawn=time+SPAWN_INTERVAL;}
+ if(started&&food>=2&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch&&(food>=14||wisps.length===0))cluster();nextSpawn=time+SPAWN_INTERVAL;}
  starfield.update(time,dt,food,player,(p,room)=>{
-  if(food<8){spawnWisp(p);return 1;}
+  if(food<14)return 0;
   if(room<2)return 0;
-  const count=Math.min(room,2+Math.floor(Math.random()*5));
+  const count=Math.min(room,clusterCount());
   const heading=p.clone().sub(player).normalize(),right=new T.Vector3().crossVectors(heading,new T.Vector3(0,1,0));
   if(right.lengthSq()<.001)right.set(1,0,0);right.normalize();
   spawnHarmonicLights(lightClusterPositions(p,right,new T.Vector3().crossVectors(right,heading).normalize(),count));return count;
@@ -298,14 +300,14 @@ function updateCinematic(dt){
 }
 function frame(now){
  requestAnimationFrame(frame);const frameMs=now-last,dt=Math.min(frameMs/1000,.04);last=now;
- narrator.setPaused(paused||$('#controls').open||document.hidden);
+ narrator.setPaused(paused||$('#controls').open||document.hidden);finalScene.setPaused(paused||$('#controls').open||document.hidden,!audio.enabled);
  if(paused||$('#controls').open||document.hidden){renderQuality.reset();return;}
  if(time>5&&renderQuality.sample(frameMs))resizeRendering();
  time+=dt;if(started)age+=dt;
  if(opening){updateOpening(dt);return;}
  if(started&&(canSwim()))updateMovement(dt);
  if(!started){kali.group.position.set(3.7,0,-1);kali.group.rotation.set(.12,-.4,.18);}
- const collapsing=collapseTime>=0&&!ended,igniting=starTime>=0&&!starEnded,cinematic=collapsing||igniting;
+ const collapsing=collapseTime>=0&&!ended,igniting=starTime>=0&&!starEnded,cinematic=collapsing||igniting||finalScene.time>=0;
  // Let the body surge ahead of a trailing position anchor; view direction still follows the mouse.
  const spinTrail=jetBoost>1?(dashTime>0?1:recoveryTime/JET_RECOVERY):0;
  const followRate=dashTime>0?(spinTrail?2.2:4.2):recoveryTime>0?5+7*(1-recoveryTime/JET_RECOVERY)-2*spinTrail:12;
@@ -323,6 +325,7 @@ function frame(now){
  jetParticles.material.opacity=food>0?.25:0;
  for(let i=0;i<150;i++){jetLife[i]-=dt;if(jetLife[i]>0){for(let k=0;k<3;k++)jetArr[i*3+k]+=jetVel[i*3+k]*dt;}else{jetArr[i*3]=player.x;jetArr[i*3+1]=player.y;jetArr[i*3+2]=player.z;}}
  if(pulse>.2||dashTime>0){for(let j=0;j<(dashTime>0?8:3);j++){const i=jetIndex++%150;jetLife[i]=1.5;tmp.set(0,-.7,.1).applyQuaternion(kali.group.quaternion).add(player);for(let k=0;k<3;k++){jetArr[i*3+k]=tmp.getComponent(k)+(Math.random()-.5)*.2;jetVel[i*3+k]=-facing.getComponent(k)*(dashTime>0?12:3)+(Math.random()-.5)*.7;}}}jetGeo.attributes.position.needsUpdate=true;
+ if(finalScene.time>=0)finalScene.update(dt,kali,camera,$('#caption'));
  horizon.uniforms.amount.value=smooth(.65,.78,collapse);horizon.uniforms.aspect.value=camera.aspect;horizon.enabled=collapse>.6;
  if(collapse>.6)updateHorizonProjection(camera,kali.hole,horizon.uniforms);
  if(started)innerCosmos.draw(time,food,collapse,kali.hole.scale.x);
@@ -330,7 +333,7 @@ function frame(now){
 }
 camera.position.set(0,2.3,17);requestAnimationFrame(frame);
 // Read-only telemetry makes full-loop smoke tests possible without bypassing feeding.
-window.kaliDemo={get state(){return {started,opening,openingTime,starTime,starEnded,paused,food,phase:phaseFor(food),rollActive,rollAngle,rollTarget,jetBoost,rollCount,jetsSinceRoll,nextRollJet,travelJets,travelClusters,backgroundStars:starfield.count,cameraDistance:zoom,cameraLag:cameraAnchor.distanceTo(player),cameraPosition:camera.position.toArray(),bodyQuaternion:kali.group.quaternion.toArray(),blackHoleScale:kali.hole.scale.x,nebulaVisible:kali.nebula.visible,arms:kali.arms.length,activeArms:kali.arms.filter(a=>a.target).length,captured:wisps.filter(w=>w.owner!==null&&!w.eaten).length,collected,mealProgress:kali.arms.map(a=>a.elapsed),feeding:kali.arms.filter(a=>a.feeding).length,wisps:wisps.length,wispDistances:wisps.map(w=>w.position.distanceTo(player)),wispScreens:wisps.map(w=>w.position.clone().project(camera).toArray()),jetDistance:JET_DISTANCE,cameraForward:camera.getWorldDirection(new T.Vector3()).toArray(),yaw,pitch,dashTime,recoveryTime,upright:new T.Vector3(0,1,0).applyQuaternion(kali.group.quaternion).y,cameraHeight:camera.position.y-player.y,bumps:0,skinGlow:kali.mantle.material.emissive.b,armSpread:kali.arms.reduce((s,a)=>s+Math.hypot(a.tip.x,a.tip.z),0)/8,position:player.toArray(),velocity:velocity.length(),collapseTime,ended,freeplay,renderCalls:renderer.info.render.calls};}};
+window.kaliDemo={get state(){return {finalTime:finalScene.time,started,opening,openingTime,starTime,starEnded,paused,food,phase:phaseFor(food),rollActive,rollAngle,rollTarget,jetBoost,rollCount,jetsSinceRoll,nextRollJet,travelJets,travelClusters,backgroundStars:starfield.count,cameraDistance:zoom,cameraLag:cameraAnchor.distanceTo(player),cameraPosition:camera.position.toArray(),bodyQuaternion:kali.group.quaternion.toArray(),blackHoleScale:kali.hole.scale.x,nebulaVisible:kali.nebula.visible,arms:kali.arms.length,activeArms:kali.arms.filter(a=>a.target).length,captured:wisps.filter(w=>w.owner!==null&&!w.eaten).length,collected,mealProgress:kali.arms.map(a=>a.elapsed),feeding:kali.arms.filter(a=>a.feeding).length,wisps:wisps.length,wispDistances:wisps.map(w=>w.position.distanceTo(player)),wispScreens:wisps.map(w=>w.position.clone().project(camera).toArray()),jetDistance:JET_DISTANCE,cameraForward:camera.getWorldDirection(new T.Vector3()).toArray(),yaw,pitch,dashTime,recoveryTime,upright:new T.Vector3(0,1,0).applyQuaternion(kali.group.quaternion).y,cameraHeight:camera.position.y-player.y,bumps:0,skinGlow:kali.mantle.material.emissive.b,armSpread:kali.arms.reduce((s,a)=>s+Math.hypot(a.tip.x,a.tip.z),0)/8,position:player.toArray(),velocity:velocity.length(),collapseTime,ended,freeplay,renderCalls:renderer.info.render.calls};}};
 if(attractMode)begin();
 
 
