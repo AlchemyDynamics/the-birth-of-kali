@@ -1,3 +1,4 @@
+import {composeMeal} from './feeding-music.js';
 export const IGNITION=24, COLLAPSE=56, REACH=6.8;
 export function phaseFor(n){return n>=COLLAPSE?'singularity':n>=IGNITION?'star':n>=8?'nebula':n>=1?'awakening':'first-light';}
 export function smooth(a,b,x){const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);}
@@ -43,9 +44,10 @@ export function feedingArms(arms,canFeed,random=Math.random){
  if(existing?.length)return existing.map(entry=>entry.arm);
  const available=arms.filter(a=>a.target);if(!available.length)return [];
  // Roll once per batch, not every frame or when a paused meal resumes.
- const selected=available.slice(0,1+Math.floor(random()*3));
+ const music=available.every(a=>Number.isFinite(a.target.note))?composeMeal(arms,available,random):null;
+ const selected=music?music.selected:available.slice(0,1+Math.floor(random()*3));
  const fresh=selected.filter(a=>a.mealDuration==null);
- if(fresh.length){const duration=1+random(),spacing=.22+random()*.16;for(const [i,arm] of fresh.entries()){arm.mealDuration=duration;arm.feedDelay=i*spacing;}}
+ if(fresh.length){const duration=music?music.duration:1+random(),spacing=music?music.spacing:.22+random()*.16;for(const [i,arm] of fresh.entries()){arm.mealDuration=duration;arm.feedDelay=i*spacing;}}
  feedingBatches.set(arms,selected.map(arm=>({arm,target:arm.target})));return selected;
 }
 

@@ -38,6 +38,8 @@ The hosted game needs no API keys or backend service. Narration is included as p
 
 The creature uses procedural pose deformation and texture-based skin relief; the water-like movement is an artistic simulation. Larger displays use an adaptive render resolution to reduce GPU load.
 
+Feeding composes with the collected pitches: nearby notes form rising and falling figures, phrase endings favor D or A, and occasional consonant chords are softly rolled. Notes keep their pitch and tentacle ownership. Interrupted meals retain their order and progress.
+
 ## Credits
 
 Created for Dreamwalkers. Rendering uses Three.js; its MIT license is included in `vendor/THREE-LICENSE.txt`. Narration was generated using ElevenLabs. No license for the original game or its assets is granted by the included third-party license.
