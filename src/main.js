@@ -63,6 +63,13 @@ function endStarBoost(){
  if(pendingTravelLights)spawnTravelLights();
 }
 function releaseBoostIfUnheld(){if(starBoost.active&&!boostHeld())endStarBoost();}
+function tryMidJetBlast(){
+ // Catching the ninth light during the burst/roll should count immediately.
+ if(blastJet||!(dashTime>0||rollActive)||!canSwim())return;
+ if(!blastJetAvailable(food,starEnded,wisps.filter(w=>w.owner!==null&&!w.eaten).length))return;
+ blastJet=true;velocity.multiplyScalar(BLAST_JET_MULTIPLIER/jetBoost);jetBoost=BLAST_JET_MULTIPLIER;
+ blastPulse.fire(player,aimDirection);
+}
 const rollAxis=new T.Vector3();
 const pathHeading=new T.Vector3(0,0,-1);let microJet={active:false,angle:0,duration:1},microElapsed=0;
 function beginJetRoll(){
@@ -280,6 +287,7 @@ function updateWisps(dt){
    const settled=dashTime===0&&velocity.length()<.45&&!movingInput&&!kali.arms.some(a=>a.grabPoint);
    settledTime=settled?settledTime+dt:0;
    if(canSwim()){const path=new T.Line3(previousPlayer,player);for(const w of wisps){if(w.eaten||w.owner!==null||time-w.born<2)continue;path.closestPointToPoint(w.position,true,tmp);if(tmp.distanceTo(w.position)<=REACH){const arm=captureLight(kali.arms,w);if(arm){arm.grabPoint=w.position.clone();arm.grabTime=0;arm.grabLight=w;collected++;audio.capture(w.noteGain,w.note);}}}}
+   tryMidJetBlast();
    const feeders=feedingArms(kali.arms,settledTime>.35&&(canSwim()),Math.random,dt);
    for(const arm of kali.arms){
      arm.feeding=canSwim()&&feeders.includes(arm);
@@ -359,7 +367,7 @@ function frame(now){
  const collapse=collapseTime<0?0:Math.min(1,collapseTime/15);
  kali.update(time,dt,food,pulse,velocity.length(),collapse,dashTime>0?1:smooth(0,JET_RECOVERY,recoveryTime),mantlePressureFor(dashTime,recoveryTime,pulse),0,igniting?smooth(0,5,starTime):1);if(started)updateWisps(dt);
  boostTrail?.update(dt,starBoost.active,player,aimDirection,time);
- blastPulse.update(dt);
+ blastPulse.update(dt,player,aimDirection);
  if(collapseTime>=0){kali.core.getWorldQuaternion(kali.photon.quaternion);kali.photon.quaternion.invert().multiply(camera.quaternion);}
  $('#message').style.opacity=time<messageUntil?'1':'0';
  jetParticles.material.opacity=food>0?.25:0;
