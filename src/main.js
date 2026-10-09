@@ -61,7 +61,7 @@ function beginJetRoll(){
  if(rollActive||microJet.active)swimPose.copy(kali.group.quaternion);
  if(time-lastJetTime>JET_DURATION+JET_RECOVERY+.25){jetsSinceRoll=0;nextRollJet=4+Math.floor(Math.random()*5);}
  lastJetTime=time;jetsSinceRoll++;rollActive=jetsSinceRoll>=nextRollJet;
- const fueled=rollActive&&starBoost.start();
+ const fueled=rollActive&&starEnded&&food>=IGNITION&&starBoost.start();
  jetBoost=fueled?STAR_BOOST_SPEED:1;rollTarget=rollActive?(270+Math.random()*450)*Math.PI/180*(Math.random()<.5?-1:1):0;
  boostRolling=fueled;boostSpin=0;boostAngularSpeed=0;boostCoast=0;
  microJet=rollActive?{active:false}:smallJetRotation();microElapsed=0;if(microJet.active)rollAxis.copy(aimDirection);
