@@ -23,6 +23,8 @@ Click **Enter the void** to begin the opening cinematic. Headphones, a keyboard,
 
 Tentacles automatically catch nearby lights. Stop swimming to eat them; moving interrupts feeding while caught lights remain attached. Feeding follows a 92 BPM pulse, with melodic swallows on successive beats and chords of up to three notes on the same beat. Nebula, star, and black-hole stages begin at 8, 100, and 350 lights. At 100 lights, a separate Blue Supergiant ignition cinematic plays, then control returns for further feeding. At 350 lights, a second cinematic shows the collapse into a singularity. Play continues until 500 stars, when a lion’s roar interrupts her. The confrontation ends with a close view inside the mantle at the black hole; press R to restart.
 
+Barrel rolls with captured stars ignite a sustained blue boost. Each held star fuels one second at 1.8× ordinary jet speed, with 65% faster steering and a continuous roll. Newly captured stars can extend the boost. Spent fuel does not count toward mantle growth; when fuel runs out, she glides back into ordinary movement. Empty barrel rolls remain available without the speed boost.
+
 ## GitHub Pages
 
 This is a static browser game. In repository **Settings → Pages**, choose **Deploy from a branch**, then **main** and **/(root)**. The `.nojekyll` file serves the included modules and assets directly. Relative URLs support the repository subdirectory used by GitHub Pages.
