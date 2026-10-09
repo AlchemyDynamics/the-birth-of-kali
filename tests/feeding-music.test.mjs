@@ -47,3 +47,8 @@ test('a scheduled chord is swallowed on one shared beat',()=>{
  for(let frame=0;frame<50;frame++){time+=1/60;for(const arm of feedingArms(arms,true,()=>rolls.shift()??.9,1/60)){if(advanceFeeding(arm,1/60)){events.push(time);nextMeal(arm);}}}
  assert.equal(events.length,3);assert.equal(new Set(events).size,1);assert.ok(Math.abs(events[0]-FEEDING_BEAT)<1/60);
 });
+test('compatible held lights favor pairs and trios, with more simultaneous chords',async()=>{
+ const {composeMeal}=await import('../src/feeding-music.js');let seed=17;const random=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);let shared=0,chords=0;const counts=[0,0,0,0];
+ for(let i=0;i<5000;i++){const arms=holding([0,4,7]);const meal=composeMeal(arms,arms,random);counts[meal.selected.length]++;if(meal.selected.length>1){shared++;if(meal.chord)chords++;}}
+ assert.ok(shared/5000>.87&&shared/5000<.93,JSON.stringify(counts));assert.ok(chords/shared>.66&&chords/shared<.74);assert.ok(counts[2]>2000&&counts[3]>2000);
+});

@@ -17,8 +17,9 @@ export function composeMeal(arms,available,random=Math.random){
   return distance+repeat+turn+resolution-(phrase.waiting.get(arm.target)||0)*1.5;
  };
  const selected=[],pool=[...available];
- // Mostly rippling melodic figures, with occasional simultaneous chords.
- const chord=random()<.25,maxNotes=Math.min(available.length,1+Math.floor(random()*3));
+ // Favor shared meals: 10% singles, 45% pairs, 45% trios when available.
+ // Compatible chords now occur more often than sequential melodic figures.
+ const chord=random()<.70,sizeRoll=random(),maxNotes=Math.min(available.length,sizeRoll<.10?1:sizeRoll<.55?2:3);
  while(selected.length<maxNotes&&pool.length){
   const choices=pool.filter(a=>!chord||selected.every(b=>consonant(a.target.note,b.target.note)));
   if(!choices.length)break;
