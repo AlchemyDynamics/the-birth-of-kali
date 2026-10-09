@@ -10,3 +10,9 @@ footer .essence{margin-left:auto}
 #caption.prologue{top:50%;bottom:auto;left:15%;width:70%;transform:translateY(-50%);font:400 clamp(20px,2.3vw,34px)/1.8 Georgia,serif;letter-spacing:.04em;color:#c4d2dd;text-shadow:none;}
 
 #intro h1{font-size:clamp(58px,8.3vw,120px);letter-spacing:-.035em;}
+
+#final-fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:10}
+#ending{left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,88vw);text-align:center;z-index:11}
+#ending h2{font-size:clamp(34px,5vw,52px)}
+body.demo-ended header,body.demo-ended #caption,body.demo-ended #cinema-top,body.demo-ended #cinema-bottom{visibility:hidden}
+body.demo-ended #world{cursor:default}

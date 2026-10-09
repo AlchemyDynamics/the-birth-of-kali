@@ -209,8 +209,7 @@ $('#begin').onclick=begin;$('#resume').onclick=()=>setPause(false);$('#pause').o
 $('#wordmark').onclick=e=>{e.preventDefault();$('#controls').showModal();};
 $('#sound').onclick=()=>{$('#sound span').textContent=audio.toggle()?'ON':'OFF';narrator.setMuted(!audio.enabled);};
 $('#help').onclick=()=>{$('#controls').showModal();keys.clear();releaseBoostIfUnheld();};$('#close-help').onclick=()=>$('#controls').close();
-$('#continue').onclick=()=>{freeplay=true;$('#ending').hidden=true;$('#hud').hidden=false;$('#objective').textContent='Feed the newborn singularity. Every swallowed star makes it grow.';nextSpawn=time+2;narrator.say(NARRATION.singularity);};
-window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat)return;if((e.code==='Space'||e.code==='ShiftLeft')&&started&&!opening&&dashTime===0&&!paused&&!$('#controls').open){dashQueued=true;dashPointer.copy(pointer);}if(e.code==='KeyP'||e.code==='Escape'){if($('#controls').open)return;setPause(!paused);}if(e.code==='KeyM')$('#sound').click();if(e.code==='KeyR'&&!$('#controls').open)reset();keys.add(e.code);});
+window.addEventListener('keydown',e=>{if(finalScene.complete){if(e.code==='KeyR')reset();return;}if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat)return;if((e.code==='Space'||e.code==='ShiftLeft')&&started&&!opening&&dashTime===0&&!paused&&!$('#controls').open){dashQueued=true;dashPointer.copy(pointer);}if(e.code==='KeyP'||e.code==='Escape'){if($('#controls').open)return;setPause(!paused);}if(e.code==='KeyM')$('#sound').click();if(e.code==='KeyR'&&!$('#controls').open)reset();keys.add(e.code);});
 window.addEventListener('keyup',e=>{keys.delete(e.code);releaseBoostIfUnheld();});window.addEventListener('blur',()=>{keys.clear();releaseBoostIfUnheld();if(started&&collapseTime<0)setPause(true);});
 $('#world').addEventListener('pointermove',e=>{if(!started||opening||paused||$('#controls').open)return;pointer.set(e.clientX/innerWidth*2-1,1-e.clientY/innerHeight*2);});
 $('#world').addEventListener('pointerleave',()=>pointer.set(0,0));
@@ -347,7 +346,7 @@ function updateCinematic(dt){
 function frame(now){
  requestAnimationFrame(frame);const frameMs=now-last,dt=Math.min(frameMs/1000,.04);last=now;
  narrator.setPaused(paused||$('#controls').open||document.hidden);finalScene.setPaused(paused||$('#controls').open||document.hidden,!audio.enabled);
- if(paused||$('#controls').open||document.hidden){renderQuality.reset();return;}
+ if(paused||$('#controls').open||document.hidden||finalScene.complete){renderQuality.reset();return;}
  if(time>5&&renderQuality.sample(frameMs))resizeRendering();
  time+=dt;if(started)age+=dt;
  if(opening){updateOpening(dt);return;}
@@ -374,7 +373,15 @@ function frame(now){
  jetParticles.material.opacity=food>0?.25:0;
  for(let i=0;i<150;i++){jetLife[i]-=dt;if(jetLife[i]>0){for(let k=0;k<3;k++)jetArr[i*3+k]+=jetVel[i*3+k]*dt;}else{jetArr[i*3]=player.x;jetArr[i*3+1]=player.y;jetArr[i*3+2]=player.z;}}
  if(pulse>.2||dashTime>0){for(let j=0;j<(dashTime>0?8:3);j++){const i=jetIndex++%150;jetLife[i]=1.5;tmp.set(0,-.7,.1).applyQuaternion(kali.group.quaternion).add(player);for(let k=0;k<3;k++){jetArr[i*3+k]=tmp.getComponent(k)+(Math.random()-.5)*.2;jetVel[i*3+k]=-facing.getComponent(k)*(dashTime>0?12:3)+(Math.random()-.5)*.7;}}}jetGeo.attributes.position.needsUpdate=true;
- if(finalScene.time>=0)finalScene.update(dt,kali,camera,$('#caption'));
+ if(finalScene.time>=0){
+  finalScene.update(dt,kali,camera,$('#caption'));
+  $('#final-fade').style.opacity=finalScene.fade;
+  if(finalScene.complete&&$('#ending').hidden){
+   keys.clear();dashQueued=false;$('#caption').textContent='';$('#ending').hidden=false;
+   document.body.classList.add('demo-ended');document.querySelector('header').inert=true;
+   narrator.clear();if(audio.ctx)audio.ctx.suspend();$('#again').focus({preventScroll:true});
+  }
+ }
  horizon.uniforms.amount.value=smooth(.65,.78,collapse);horizon.uniforms.aspect.value=camera.aspect;horizon.enabled=collapse>.6;
  if(collapse>.6)updateHorizonProjection(camera,kali.hole,horizon.uniforms);
  if(started)innerCosmos.draw(time,food,collapse,kali.hole.scale.x);
@@ -382,7 +389,7 @@ function frame(now){
 }
 camera.position.set(0,2.3,17);requestAnimationFrame(frame);
 // Read-only telemetry makes full-loop smoke tests possible without bypassing feeding.
-window.kaliDemo={get state(){return {ionPulse:blastPulse.state,blastJet:blastJet&&(dashTime>0||recoveryTime>0),blastPulses:blastPulse.fired,activeBlastPulses:blastPulse.active,boosting:starBoost.active,boostBurned:starBoost.burned,boostRolling,finalTime:finalScene.time,started,opening,openingTime,starTime,starEnded,paused,food,phase:phaseFor(food),rollActive,rollAngle,rollTarget,jetBoost,rollCount,jetsSinceRoll,nextRollJet,travelJets,travelClusters,backgroundStars:starfield.count,cameraDistance:zoom,cameraLag:cameraAnchor.distanceTo(player),cameraPosition:camera.position.toArray(),bodyQuaternion:kali.group.quaternion.toArray(),blackHoleScale:kali.hole.scale.x,nebulaVisible:kali.nebula.visible,arms:kali.arms.length,activeArms:kali.arms.filter(a=>a.target).length,captured:wisps.filter(w=>w.owner!==null&&!w.eaten).length,collected,mealProgress:kali.arms.map(a=>a.elapsed),feeding:kali.arms.filter(a=>a.feeding).length,wisps:wisps.length,wispDistances:wisps.map(w=>w.position.distanceTo(player)),wispScreens:wisps.map(w=>w.position.clone().project(camera).toArray()),jetDistance:JET_DISTANCE,cameraForward:camera.getWorldDirection(new T.Vector3()).toArray(),yaw,pitch,dashTime,recoveryTime,upright:new T.Vector3(0,1,0).applyQuaternion(kali.group.quaternion).y,cameraHeight:camera.position.y-player.y,bumps:0,skinGlow:kali.mantle.material.emissive.b,armSpread:kali.arms.reduce((s,a)=>s+Math.hypot(a.tip.x,a.tip.z),0)/8,position:player.toArray(),velocity:velocity.length(),collapseTime,ended,freeplay,renderCalls:renderer.info.render.calls};}};
+window.kaliDemo={get state(){return {ionPulse:blastPulse.state,blastJet:blastJet&&(dashTime>0||recoveryTime>0),blastPulses:blastPulse.fired,activeBlastPulses:blastPulse.active,boosting:starBoost.active,boostBurned:starBoost.burned,boostRolling,finalTime:finalScene.time,finalFade:finalScene.fade,finalComplete:finalScene.complete,started,opening,openingTime,starTime,starEnded,paused,food,phase:phaseFor(food),rollActive,rollAngle,rollTarget,jetBoost,rollCount,jetsSinceRoll,nextRollJet,travelJets,travelClusters,backgroundStars:starfield.count,cameraDistance:zoom,cameraLag:cameraAnchor.distanceTo(player),cameraPosition:camera.position.toArray(),bodyQuaternion:kali.group.quaternion.toArray(),blackHoleScale:kali.hole.scale.x,nebulaVisible:kali.nebula.visible,arms:kali.arms.length,activeArms:kali.arms.filter(a=>a.target).length,captured:wisps.filter(w=>w.owner!==null&&!w.eaten).length,collected,mealProgress:kali.arms.map(a=>a.elapsed),feeding:kali.arms.filter(a=>a.feeding).length,wisps:wisps.length,wispDistances:wisps.map(w=>w.position.distanceTo(player)),wispScreens:wisps.map(w=>w.position.clone().project(camera).toArray()),jetDistance:JET_DISTANCE,cameraForward:camera.getWorldDirection(new T.Vector3()).toArray(),yaw,pitch,dashTime,recoveryTime,upright:new T.Vector3(0,1,0).applyQuaternion(kali.group.quaternion).y,cameraHeight:camera.position.y-player.y,bumps:0,skinGlow:kali.mantle.material.emissive.b,armSpread:kali.arms.reduce((s,a)=>s+Math.hypot(a.tip.x,a.tip.z),0)/8,position:player.toArray(),velocity:velocity.length(),collapseTime,ended,freeplay,renderCalls:renderer.info.render.calls};}};
 if(attractMode)begin();
 
 
