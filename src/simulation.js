@@ -1,5 +1,5 @@
 import {composeMeal,FEEDING_BEAT} from './feeding-music.js';
-export const IGNITION=150, COLLAPSE=350, REACH=6.8;
+export const IGNITION=100, COLLAPSE=350, REACH=6.8;
 export function phaseFor(n){return n>=COLLAPSE?'singularity':n>=IGNITION?'star':n>=8?'nebula':n>=1?'awakening':'first-light';}
 export function smooth(a,b,x){const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);}
 export function integrateVelocity(v,input,dt,impulse=0,dashing=false,recovery=0,jetBoost=1){
