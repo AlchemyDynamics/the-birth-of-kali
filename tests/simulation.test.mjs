@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {phaseFor,integrateVelocity,reserve,advanceFeeding,captureLight,nextMeal,steeringRate,SPAWN_DISTANCE,SPAWN_INTERVAL,MAX_WISPS,JET_DISTANCE} from '../src/simulation.js';
-test('progression crosses each boundary exactly',()=>{assert.deepEqual([0,1,7,8,99,100,349,350].map(phaseFor),['first-light','awakening','awakening','nebula','nebula','star','star','singularity']);});
+test('progression crosses each boundary exactly',()=>{assert.deepEqual([0,1,7,8,74,75,349,350].map(phaseFor),['first-light','awakening','awakening','nebula','nebula','star','star','singularity']);});
 test('two arms cannot own or consume the same wisp',()=>{const w={owner:null,eaten:false};const a={index:0,target:null},b={index:1,target:null};assert.ok(reserve(a,w));assert.equal(reserve(b,w),false);assert.equal(advanceFeeding(a,.5),null);assert.equal(w.eaten,false);assert.equal(advanceFeeding(a,a.mealDuration/1.5-.5),w);assert.equal(w.eaten,true);assert.equal(advanceFeeding(a,1),null);assert.equal(reserve(b,w),false);});
 test('water drag slows glide independently of frame rate',()=>{let a=[5,0,0],b=[5,0,0];for(let i=0;i<30;i++)a=integrateVelocity(a,[0,0,0],1/60);for(let i=0;i<60;i++)b=integrateVelocity(b,[0,0,0],1/120);assert.ok(Math.abs(a[0]-b[0])<1e-10);assert.ok(a[0]<.2&&a[0]>.1);for(let i=0;i<60;i++)a=integrateVelocity(a,[0,0,0],1/60);assert.deepEqual(a,[0,0,0]);});
 test('jet input is bounded and can move on all three axes',()=>{const v=integrateVelocity([0,0,0],[1,1,1],.016,20);assert.ok(v.every(x=>x>0));assert.ok(Math.hypot(...v)<=10.000001);});
