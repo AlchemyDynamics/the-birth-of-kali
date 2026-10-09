@@ -71,7 +71,7 @@ function beginJetRoll(){
  if(time-lastJetTime>JET_DURATION+JET_RECOVERY+.25){jetsSinceRoll=0;nextRollJet=4+Math.floor(Math.random()*5);}
  lastJetTime=time;jetsSinceRoll++;rollActive=jetsSinceRoll>=nextRollJet;
  const fueled=STAR_BOOST_ENABLED&&rollActive&&starEnded&&food>=IGNITION&&boostHeld()&&starBoost.start();
- blastJet=blastJetAvailable(food,ended&&freeplay,wisps.filter(w=>w.owner!==null&&!w.eaten).length);
+ blastJet=blastJetAvailable(food,starEnded,wisps.filter(w=>w.owner!==null&&!w.eaten).length);
  // Make the extra forward light visible even during a short, capped boost.
  if(fueled)nextSpawn=Math.min(nextSpawn,time+.15);
  jetBoost=fueled?STAR_BOOST_SPEED:blastJet?BLAST_JET_MULTIPLIER:1;rollTarget=rollActive?(270+Math.random()*450)*Math.PI/180*(Math.random()<.5?-1:1):0;

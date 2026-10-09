@@ -1,13 +1,13 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {STAR_BOOST_ENABLED,BLAST_JET_MULTIPLIER,blastJetAvailable} from '../src/movement-abilities.js';
-import {COLLAPSE,JET_SPEED,JET_DURATION,JET_RECOVERY,integrateVelocity} from '../src/simulation.js';
-test('legacy boost is disabled; blast requires completed collapse and 16 held stars',()=>{
+import {IGNITION,JET_SPEED,JET_DURATION,JET_RECOVERY,integrateVelocity} from '../src/simulation.js';
+test('legacy boost is disabled; blast requires completed ignition and more than eight held stars',()=>{
  assert.equal(STAR_BOOST_ENABLED,false);
- assert.equal(blastJetAvailable(COLLAPSE-1,true,20),false);
- assert.equal(blastJetAvailable(COLLAPSE,false,20),false);
- assert.equal(blastJetAvailable(COLLAPSE,true,15),false);
- assert.equal(blastJetAvailable(COLLAPSE,true,16),true);
- assert.equal(blastJetAvailable(COLLAPSE+20,true,40),true);
+ assert.equal(blastJetAvailable(IGNITION-1,true,20),false);
+ assert.equal(blastJetAvailable(IGNITION,false,20),false);
+ assert.equal(blastJetAvailable(IGNITION,true,8),false);
+ assert.equal(blastJetAvailable(IGNITION,true,9),true);
+ assert.equal(blastJetAvailable(IGNITION+20,true,40),true);
 });
 test('blast travels 25 percent farther with the same burst and water-drag timing',()=>{
  function distance(multiplier,fps){let v=[0,0,-JET_SPEED*multiplier],distance=0;const dt=1/fps;
