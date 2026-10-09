@@ -16,6 +16,6 @@ export const NARRATION={
  hungered:'Still, she hungered.',
  escape:'Until even light could no longer escape.',
  darkness:'And within her… unfathomable darkness.',
- ending:'The darkness has a hunger. A star was born within her. And even a star could not be enough.',
+ ending:'The darkness has a hunger. Even a star could not be enough',
  singularity:'Feed the newborn singularity. Every swallowed star makes it grow.'
 };
