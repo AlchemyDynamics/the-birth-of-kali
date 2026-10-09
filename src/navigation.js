@@ -22,7 +22,12 @@ export function travelLightPositions(player,heading,random=Math.random,food=0){
  if(right.lengthSq()<.001)right.set(1,0,0);
  right.normalize();const up=new T.Vector3().crossVectors(right,heading).normalize(),angle=random()*Math.PI*2;
  const count=discoveryCount(food)||clusterCount(random),positions=[];
- if(food>=2){
+ if(food>=2&&food<14){
+  // Keep discovery groups close and just to either side of the forward view.
+  const center=player.clone().addScaledVector(heading,JET_DISTANCE*2.4).addScaledVector(right,(random()<.5?-1:1)*(REACH+3.2)).addScaledVector(up,2);
+  return lightClusterPositions(center,right,up,count,random);
+ }
+ if(food>=14){
   // Once the nebula forms, every new set is a single reachable chord cluster.
   // Keep the whole set outside the straight jet corridor so it needs steering.
   const distance=JET_DISTANCE*(3.2+random()*1.6),offset=REACH+6+random()*3;

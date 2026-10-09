@@ -116,7 +116,7 @@ function setStage(){
 }
 let starTime=-1,starEnded=false;
 function canSwim(){return finalScene.time<0&&!(starTime>=0&&!starEnded)&&(collapseTime<0||freeplay);}
-function consume(w){if(!canSwim()||food>=COLLAPSE&&!freeplay)return;food++;audio.eat(w.note,w.noteGain);setStage();if(food===FINAL_STARS){narrator.clear();finalScene.start(camera,kali);velocity.set(0,0,0);keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;rollActive=false;microJet.active=false;pulse=0;document.body.classList.add('cinematic');$('#hud').hidden=true;return;}if(food===1)nextSpawn=Infinity;if(food===2){say(NARRATION.secondMeal,5);nextSpawn=time+4;}if([4,7,10].includes(food))nextSpawn=time+4;if(food===IGNITION&&!starEnded){starTime=0;narrator.clear();audio.tone(329.63,6,.10);document.body.classList.add('cinematic');$('#hud').hidden=true;keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);}
+function consume(w){if(!canSwim()||food>=COLLAPSE&&!freeplay)return;food++;audio.eat(w.note,w.noteGain);setStage();if(food===FINAL_STARS){narrator.clear();finalScene.start(camera,kali);velocity.set(0,0,0);keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;rollActive=false;microJet.active=false;pulse=0;document.body.classList.add('cinematic');$('#hud').hidden=true;return;}if(food===1)nextSpawn=Infinity;if(food===2){say(NARRATION.secondMeal,5);nextSpawn=time+1.5;}if([4,7,10].includes(food))nextSpawn=time+4;if(food===IGNITION&&!starEnded){starTime=0;narrator.clear();audio.tone(329.63,6,.10);document.body.classList.add('cinematic');$('#hud').hidden=true;keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);}
 if(food===COLLAPSE&&!ended){collapseTime=0;narrator.clear();document.body.classList.add('cinematic');$('#hud').hidden=true;audio.collapse();keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;}}
 function begin(){
  if(started)return;if(audio.enabled)audio.init();started=true;opening=true;openingTime=0;firstSpawned=true;
@@ -235,7 +235,7 @@ function updateMovement(dt){
 }
 function updateWisps(dt){
  kali.group.updateMatrixWorld(true);
- for(let i=wisps.length-1;i>=0;i--){const w=wisps[i];if(w.eaten||food>=14&&w.owner===null&&w.position.distanceTo(player)>85){scene.remove(w.sprite);w.sprite.material.dispose();w.center.geometry.dispose();w.center.material.dispose();wisps.splice(i,1);continue;}
+ for(let i=wisps.length-1;i>=0;i--){const w=wisps[i];if(w.eaten||food>=2&&w.owner===null&&w.position.distanceTo(player)>85){scene.remove(w.sprite);w.sprite.material.dispose();w.center.geometry.dispose();w.center.material.dispose();wisps.splice(i,1);continue;}
    const born=smooth(w.first?2:0,w.first?6:(w.fadeSeconds||3),time-w.born);w.sprite.material.opacity=born*(.77+.15*Math.sin(time*1.5+w.seed));w.center.visible=born>.05;
    const distance=w.position.distanceTo(camera.position),white=smooth(22,90,distance);w.brightness=proximityBrightness(w.position.distanceTo(player))*(w.lightGain||1);w.sprite.material.color.setRGB(.08+.68*white,.32+.52*white,1).multiplyScalar(w.brightness);w.center.material.color.copy(w.sprite.material.color);
    if(w.owner===null){w.position.copy(w.base);w.position.x+=Math.sin(time*.22+w.seed)*.55;w.position.y+=Math.sin(time*.33+w.seed)*.55-(time-w.born)*.025;w.position.z+=Math.cos(time*.24+w.seed)*.35;}
@@ -260,7 +260,7 @@ function updateWisps(dt){
  let si=0;for(const w of wisps){for(let j=0;j<24&&si<1400;j++,si++){const u=j/24,a=w.seed+j*2.399+time*.23,r=.05+u*.48;snowPos[si*3]=w.position.x+Math.sin(a)*r;snowPos[si*3+1]=w.position.y+u*1.4;snowPos[si*3+2]=w.position.z+Math.cos(a)*r;const b=(1-u)*w.sprite.material.opacity;snowColor.set([b*.1,b*.42,b*.9],si*3);}}snowGeo.setDrawRange(0,si);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.color.needsUpdate=true;
  // A formed singularity draws twice the blue-light flow into her void.
  const spawnRate=food>=COLLAPSE?2:1,fieldLimit=Math.min(28,MAX_WISPS+Math.floor(food/8)*3)*spawnRate,batch=6;
- if(started&&food>=2&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch&&(food>=14||wisps.length===0))cluster();nextSpawn=time+SPAWN_INTERVAL/spawnRate;}
+ if(started&&food>=2&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch)cluster();nextSpawn=time+(food<14?8:SPAWN_INTERVAL)/spawnRate;}
  starfield.update(time,dt,food,player,(p,room)=>{
   if(food<14)return 0;
   if(room<2)return 0;

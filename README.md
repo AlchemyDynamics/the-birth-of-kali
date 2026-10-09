@@ -46,7 +46,7 @@ Created for Dreamwalkers. Rendering uses Three.js; its MIT license is included i
 
 After singularity formation, periodic blue-light groups spawn every 12 seconds instead of 24, and the blue-light field capacity rises from 28 to 56.
 
-The second light fades in over seven seconds at twice normal brightness, about two jets ahead. Completing it restores the white starfield. Blue groups then unfold as 2, 3, 3, and 4 before weighted groups of 2–6 (32%, 28%, 22%, 12%, 6%).
+The second light fades in over seven seconds at twice normal brightness, about two jets ahead. Completing it restores the white starfield. Early groups begin 1.5 seconds after the second meal, repeat every eight seconds even if earlier lights were missed, and appear roughly 2.5 jets ahead. Blue group sizes build through 2, 3, 3, and 4 before weighted groups of 2–6 (32%, 28%, 22%, 12%, 6%).
 
 ## Harmonic light clusters
 
