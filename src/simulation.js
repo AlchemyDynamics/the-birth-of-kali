@@ -1,4 +1,4 @@
-import {composeMeal} from './feeding-music.js';
+import {composeMeal,FEEDING_BEAT} from './feeding-music.js';
 export const IGNITION=24, COLLAPSE=56, REACH=6.8;
 export function phaseFor(n){return n>=COLLAPSE?'singularity':n>=IGNITION?'star':n>=8?'nebula':n>=1?'awakening':'first-light';}
 export function smooth(a,b,x){const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);}
@@ -27,7 +27,7 @@ export function steeringRate(value){const a=Math.abs(value);return a<.12?0:Math.
 // A wisp is reserved by exactly one arm. Consumption is committed only at the mouth.
 export function reserve(arm,wisp){if(arm.target||wisp.owner!==null||wisp.eaten)return false;arm.target=wisp;arm.elapsed=0;arm.mealDuration=null;arm.feedDelay=0;wisp.owner=arm.index;return true;}
 // Choose once per meal; pauses preserve both progress and its 1-2 second duration.
-export function advanceFeeding(arm,dt,canFeed=true){if(!arm.target||!canFeed)return null;dt*=1.5;if(arm.feedDelay>0){const waiting=Math.min(dt,arm.feedDelay);arm.feedDelay-=waiting;dt-=waiting;if(dt<=0)return null;}arm.mealDuration??=1+Math.random();arm.elapsed+=dt*3.2/arm.mealDuration;if(arm.elapsed<3.2-1e-9)return null;const w=arm.target;w.eaten=true;arm.target=null;return w;}
+export function advanceFeeding(arm,dt,canFeed=true){if(!arm.target||!canFeed)return null;if(arm.feedSchedule){const {clock,start,end}=arm.feedSchedule;arm.feedDelay=Math.max(0,start-clock.time);arm.elapsed=3.2*Math.max(0,Math.min(1,(clock.time-start)/(end-start)));if(clock.time+1e-9<end)return null;const w=arm.target;w.eaten=true;arm.target=null;arm.feedSchedule=null;return w;}dt*=1.5;if(arm.feedDelay>0){const waiting=Math.min(dt,arm.feedDelay);arm.feedDelay-=waiting;dt-=waiting;if(dt<=0)return null;}arm.mealDuration??=1+Math.random();arm.elapsed+=dt*3.2/arm.mealDuration;if(arm.elapsed<3.2-1e-9)return null;const w=arm.target;w.eaten=true;arm.target=null;return w;}
 export function captureLight(arms,wisp){
  if(wisp.owner!==null||wisp.eaten)return null;
  const arm=arms.reduce((best,a)=>((a.target?1:0)+(a.cargo?.length||0)<(best.target?1:0)+(best.cargo?.length||0))?a:best);
@@ -35,19 +35,21 @@ export function captureLight(arms,wisp){
  if(!arm.target)reserve(arm,wisp);else{arm.cargo.push(wisp);wisp.owner=arm.index;}
  return arm;
 }
-export function nextMeal(arm){arm.target=arm.cargo?.shift()||null;arm.elapsed=0;arm.mealDuration=null;arm.feedDelay=0;}
+export function nextMeal(arm){arm.target=arm.cargo?.shift()||null;arm.elapsed=0;arm.mealDuration=null;arm.feedDelay=0;arm.feedSchedule=null;}
 
-const feedingBatches=new WeakMap();
-export function feedingArms(arms,canFeed,random=Math.random){
+const feedingBatches=new WeakMap(),feedingClocks=new WeakMap();
+export function feedingArms(arms,canFeed,random=Math.random,dt=null){
  if(!canFeed)return [];
+ let clock=feedingClocks.get(arms);if(!clock){clock={time:0};feedingClocks.set(arms,clock);}if(dt!==null)clock.time+=dt;
  const existing=feedingBatches.get(arms)?.filter(({arm,target})=>arm.target===target&&!target.eaten);
  if(existing?.length)return existing.map(entry=>entry.arm);
- const available=arms.filter(a=>a.target);if(!available.length)return [];
+ const available=arms.filter(a=>a.target);if(!available.length){clock.time=0;return [];}
  // Roll once per batch, not every frame or when a paused meal resumes.
  const music=available.every(a=>Number.isFinite(a.target.note))?composeMeal(arms,available,random):null;
  const selected=music?music.selected:available.slice(0,1+Math.floor(random()*3));
  const fresh=selected.filter(a=>a.mealDuration==null);
  if(fresh.length){const duration=music?music.duration:1+random(),spacing=music?music.spacing:.22+random()*.16;for(const [i,arm] of fresh.entries()){arm.mealDuration=duration;arm.feedDelay=i*spacing;}}
+ if(music&&dt!==null){const beat=Math.floor(clock.time/FEEDING_BEAT)+1;for(const [i,arm] of selected.entries()){const end=(beat+(music.chord?0:i))*FEEDING_BEAT;arm.feedSchedule={clock,start:end-FEEDING_BEAT,end};}}
  feedingBatches.set(arms,selected.map(arm=>({arm,target:arm.target})));return selected;
 }
 

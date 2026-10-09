@@ -1,5 +1,6 @@
 // Compose with the pitches already held by different arms; never retune a light
 // or swap cargo between tentacles. State belongs to this creature's arm array.
+export const FEEDING_BPM=92,FEEDING_BEAT=60/FEEDING_BPM;
 const phrases=new WeakMap();
 const consonant=(a,b)=>[0,3,4,5,7,8,9].includes(Math.abs(a-b)%12);
 export function composeMeal(arms,available,random=Math.random){
@@ -16,7 +17,7 @@ export function composeMeal(arms,available,random=Math.random){
   return distance+repeat+turn+resolution-(phrase.waiting.get(arm.target)||0)*1.5;
  };
  const selected=[],pool=[...available];
- // Mostly rippling melodic figures, with occasional softly rolled chords.
+ // Mostly rippling melodic figures, with occasional simultaneous chords.
  const chord=random()<.25,maxNotes=Math.min(available.length,1+Math.floor(random()*3));
  while(selected.length<maxNotes&&pool.length){
   const choices=pool.filter(a=>!chord||selected.every(b=>consonant(a.target.note,b.target.note)));
@@ -25,5 +26,5 @@ export function composeMeal(arms,available,random=Math.random){
   phrase.last=arm.target.note;phrase.waiting.delete(arm.target);phrase.step++;
   if(phrase.step>=phrase.length){phrase.step=0;phrase.direction*=-1;phrase.length=4+Math.floor(random()*3);}
  }
- return {selected,duration:1.2+random()*.45,spacing:chord?.065:.32};
+ return {selected,duration:FEEDING_BEAT*1.5,spacing:chord?0:FEEDING_BEAT*1.5,chord};
 }

@@ -21,7 +21,7 @@ Click **Enter the void** to begin the opening cinematic. Headphones, a keyboard,
 | R | Restart |
 | ? | Show controls |
 
-Tentacles automatically catch nearby lights. Stop swimming to eat them; moving interrupts feeding while caught lights remain attached. Musical meals take about 0.8–1.1 seconds, with staggered batches of up to three. Nebula, star, and black-hole stages begin at 8, 24, and 56 lights. At 24 lights, a separate Blue Supergiant ignition cinematic plays, then control returns for further feeding. At 56 lights, a second cinematic shows the collapse into a singularity. Play continues afterward.
+Tentacles automatically catch nearby lights. Stop swimming to eat them; moving interrupts feeding while caught lights remain attached. Feeding follows a 92 BPM pulse, with melodic swallows on successive beats and chords of up to three notes on the same beat. Nebula, star, and black-hole stages begin at 8, 24, and 56 lights. At 24 lights, a separate Blue Supergiant ignition cinematic plays, then control returns for further feeding. At 56 lights, a second cinematic shows the collapse into a singularity. Play continues afterward.
 
 ## GitHub Pages
 
@@ -38,7 +38,7 @@ The hosted game needs no API keys or backend service. Narration is included as p
 
 The creature uses procedural pose deformation and texture-based skin relief; the water-like movement is an artistic simulation. Larger displays use an adaptive render resolution to reduce GPU load.
 
-Feeding composes with the collected pitches: nearby notes form rising and falling figures, phrase endings favor D or A, and occasional consonant chords are softly rolled. Notes keep their pitch and tentacle ownership. Interrupted meals retain their order and progress.
+Feeding composes with the collected pitches: nearby notes form rising and falling figures, phrase endings favor D or A, and occasional consonant chords land together on a beat. Notes keep their pitch and tentacle ownership. Interrupted meals retain their order and progress; the shared feeding clock pauses with movement.
 
 ## Credits
 

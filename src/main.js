@@ -239,7 +239,7 @@ function updateWisps(dt){
    const settled=dashTime===0&&velocity.length()<.45&&!movingInput&&!kali.arms.some(a=>a.grabPoint);
    settledTime=settled?settledTime+dt:0;
    if(canSwim()){const path=new T.Line3(previousPlayer,player);for(const w of wisps){if(w.eaten||w.owner!==null||time-w.born<2)continue;path.closestPointToPoint(w.position,true,tmp);if(tmp.distanceTo(w.position)<=REACH){const arm=captureLight(kali.arms,w);if(arm){arm.grabPoint=w.position.clone();arm.grabTime=0;arm.grabLight=w;collected++;audio.capture(w.noteGain,w.note);}}}}
-   const feeders=feedingArms(kali.arms,settledTime>.35&&(canSwim()));
+   const feeders=feedingArms(kali.arms,settledTime>.35&&(canSwim()),Math.random,dt);
    for(const arm of kali.arms){
      arm.feeding=canSwim()&&feeders.includes(arm);
      arm.feedBlend=T.MathUtils.lerp(arm.feedBlend||0,arm.feeding?1:0,1-Math.exp(-dt*6));
