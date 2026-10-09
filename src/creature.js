@@ -184,6 +184,11 @@ export function createKali(){
          v.set(dir.x*(1-u)*1.5,-.22-u*.88+Math.sin(u*Math.PI)*.6,dir.z*(1-u)*1.5);
          p.lerp(v,pull*smooth(.08,1,u));
        }
+       if(arm.blastSqueeze>0&&!arm.cinematicGoal){
+         // Contract the distal arms around their carried lights, then release.
+         const squeeze=arm.blastSqueeze*smooth(.35,1,u);
+         p.x*=1-.58*squeeze;p.z*=1-.58*squeeze;p.y+=.65*squeeze*u;
+       }
      }
      arm.normalLength=normalLength;
      // Limit the entire curved centerline, not only root-to-tip distance.
