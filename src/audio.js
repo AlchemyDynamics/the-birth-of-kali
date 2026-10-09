@@ -1,4 +1,4 @@
-// D major pentatonic, D4 through D6: open, gentle intervals over two octaves.
+// D major pentatonic, D4 through D7: open, gentle intervals over three octaves.
 import {BELL_SCALE,bellFrequency} from './harmony.js';
 export class Soundscape {
  constructor(){this.enabled=true;this.ctx=null;this.lastNote=-1;this.recentNotes=[];}
