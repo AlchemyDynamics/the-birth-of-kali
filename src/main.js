@@ -54,6 +54,12 @@ let rollElapsed=0,rollSlowDegrees=10,rollCorrectionDegrees=5;
 let boostRolling=false,boostSpin=0,boostAngularSpeed=0,boostCoast=0;
 const boostTrail=createBoostTrail(scene,tex);
 const starBoost=createStarBoost(kali.arms,()=>{boostTrail.ignite();audio.jet();});
+function boostHeld(){return keys.has('Space')||keys.has('ShiftLeft');}
+function endStarBoost(){
+ starBoost.stop();dashTime=0;recoveryTime=JET_RECOVERY;boostCoast=0;
+ if(pendingTravelLights)spawnTravelLights();
+}
+function releaseBoostIfUnheld(){if(starBoost.active&&!boostHeld())endStarBoost();}
 const rollAxis=new T.Vector3();
 const pathHeading=new T.Vector3(0,0,-1);let microJet={active:false,angle:0,duration:1},microElapsed=0;
 function beginJetRoll(){
@@ -61,7 +67,7 @@ function beginJetRoll(){
  if(rollActive||microJet.active)swimPose.copy(kali.group.quaternion);
  if(time-lastJetTime>JET_DURATION+JET_RECOVERY+.25){jetsSinceRoll=0;nextRollJet=4+Math.floor(Math.random()*5);}
  lastJetTime=time;jetsSinceRoll++;rollActive=jetsSinceRoll>=nextRollJet;
- const fueled=rollActive&&starEnded&&food>=IGNITION&&starBoost.start();
+ const fueled=rollActive&&starEnded&&food>=IGNITION&&boostHeld()&&starBoost.start();
  jetBoost=fueled?STAR_BOOST_SPEED:1;rollTarget=rollActive?(270+Math.random()*450)*Math.PI/180*(Math.random()<.5?-1:1):0;
  boostRolling=fueled;boostSpin=0;boostAngularSpeed=0;boostCoast=0;
  microJet=rollActive?{active:false}:smallJetRotation();microElapsed=0;if(microJet.active)rollAxis.copy(aimDirection);
@@ -123,8 +129,8 @@ function setStage(){
 }
 let starTime=-1,starEnded=false;
 function canSwim(){return finalScene.time<0&&!(starTime>=0&&!starEnded)&&(collapseTime<0||freeplay);}
-function consume(w){if(!canSwim()||food>=COLLAPSE&&!freeplay)return;food++;audio.eat(w.note,w.noteGain);setStage();if(food===FINAL_STARS){narrator.clear();finalScene.start(camera,kali);velocity.set(0,0,0);keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;rollActive=false;microJet.active=false;pulse=0;document.body.classList.add('cinematic');$('#hud').hidden=true;return;}if(food===1)nextSpawn=Infinity;if(food===2){say(NARRATION.secondMeal,5);nextSpawn=time+1.5;}if([4,7,10].includes(food))nextSpawn=time+4;if(food===IGNITION&&!starEnded){starTime=0;narrator.clear();audio.tone(329.63,6,.10);document.body.classList.add('cinematic');$('#hud').hidden=true;keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);}
-if(food===COLLAPSE&&!ended){collapseTime=0;narrator.clear();document.body.classList.add('cinematic');$('#hud').hidden=true;audio.collapse();keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;}}
+function consume(w){if(!canSwim()||food>=COLLAPSE&&!freeplay)return;food++;audio.eat(w.note,w.noteGain);setStage();if(food===FINAL_STARS){narrator.clear();finalScene.start(camera,kali);velocity.set(0,0,0);keys.clear();releaseBoostIfUnheld();dashQueued=false;dashTime=0;recoveryTime=0;rollActive=false;microJet.active=false;pulse=0;document.body.classList.add('cinematic');$('#hud').hidden=true;return;}if(food===1)nextSpawn=Infinity;if(food===2){say(NARRATION.secondMeal,5);nextSpawn=time+1.5;}if([4,7,10].includes(food))nextSpawn=time+4;if(food===IGNITION&&!starEnded){starTime=0;narrator.clear();audio.tone(329.63,6,.10);document.body.classList.add('cinematic');$('#hud').hidden=true;keys.clear();releaseBoostIfUnheld();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);}
+if(food===COLLAPSE&&!ended){collapseTime=0;narrator.clear();document.body.classList.add('cinematic');$('#hud').hidden=true;audio.collapse();keys.clear();releaseBoostIfUnheld();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;}}
 function begin(){
  if(started)return;if(audio.enabled)audio.init();started=true;opening=true;openingTime=0;firstSpawned=true;
  player.set(0,0,0);kali.group.position.copy(player);kali.group.quaternion.identity();swimPose.identity();bodyYaw=0;cameraAnchor.copy(player);
@@ -133,7 +139,7 @@ function begin(){
  // Keep the ember halo readable as the gripping tip passes in front of it.
  openingLight.sprite.material.depthTest=false;openingLight.sprite.renderOrder=10;
  camera.position.copy(openingOrigin).add(new T.Vector3(.1,.08,1.2));camera.lookAt(openingOrigin);
- narrator.clear();keys.clear();pointer.set(0,0);
+ narrator.clear();keys.clear();releaseBoostIfUnheld();pointer.set(0,0);
 }
 function updateOpening(dt){
  openingTime+=dt;
@@ -180,30 +186,31 @@ function updateOpening(dt){
  if(t>=12){const handoff=smooth(12,15,t);desiredCamera.lerp(new T.Vector3(1.8,.9,zoom).applyEuler(new T.Euler(pitch,yaw,0,'YXZ')),handoff);const view=new T.Vector3(0,0,-1).applyEuler(new T.Euler(pitch,yaw,0,'YXZ'));look.lerp(desiredCamera.clone().addScaledVector(view,60),handoff);}
  if(shotTime>=5&&shotTime<8){const eyeBlend=smooth(5,5.6,shotTime)*(1-smooth(7.3,8,shotTime));const eye=new T.Vector3(1.4,.3,.02);desiredCamera.lerp(new T.Vector3(2.65,.52,.5),eyeBlend);look.lerp(eye,eyeBlend);}
  camera.position.lerp(desiredCamera,1-Math.exp(-dt*6));camera.lookAt(look);for(const eye of kali.organicEyes)eye.reflectLight(openingLight.position,camera.position);composer.render();
- if(t>=15){for(const eye of kali.organicEyes){eye.cinematic.active=false;eye.reflection.material.opacity=0;}for(const l of wispLights)l.color.setHex(0x329bff);openingDust.visible=false;openingHaze.visible=false;opening=false;for(const other of kali.arms){other.cinematicGoal=null;other.cinematicBlend=0;}arm.cinematicGoal=null;arm.cinematicBlend=0;arm.elapsed=0;arm.feeding=false;swimPose.copy(kali.group.quaternion);cameraAnchor.copy(player);keys.clear();pointer.set(0,0);dashQueued=false;$('#caption').textContent='';document.body.classList.remove('cinematic');$('#hud').hidden=false;nextSpawn=Infinity;say(NARRATION.hunger);
+ if(t>=15){for(const eye of kali.organicEyes){eye.cinematic.active=false;eye.reflection.material.opacity=0;}for(const l of wispLights)l.color.setHex(0x329bff);openingDust.visible=false;openingHaze.visible=false;opening=false;for(const other of kali.arms){other.cinematicGoal=null;other.cinematicBlend=0;}arm.cinematicGoal=null;arm.cinematicBlend=0;arm.elapsed=0;arm.feeding=false;swimPose.copy(kali.group.quaternion);cameraAnchor.copy(player);keys.clear();releaseBoostIfUnheld();pointer.set(0,0);dashQueued=false;$('#caption').textContent='';document.body.classList.remove('cinematic');$('#hud').hidden=false;nextSpawn=Infinity;say(NARRATION.hunger);
  const forward=camera.getWorldDirection(new T.Vector3()),above=new T.Vector3(0,1,0).applyQuaternion(camera.quaternion);
  const second=spawnWisp(player.clone().addScaledVector(forward,JET_DISTANCE*2).addScaledVector(above,3));second.fadeSeconds=7;second.lightGain=2;}
 }
-function setPause(value){if(!started||collapseTime>=0&&!ended)return;paused=value;$('#paused').hidden=!paused;$('#pause').textContent=paused?'▷':'Ⅱ';keys.clear();pointer.set(0,0);dashQueued=false;}
+function setPause(value){if(!started||collapseTime>=0&&!ended)return;paused=value;$('#paused').hidden=!paused;$('#pause').textContent=paused?'▷':'Ⅱ';keys.clear();releaseBoostIfUnheld();pointer.set(0,0);dashQueued=false;}
 function reset(){location.href=location.pathname;}
 $('#begin').onclick=begin;$('#resume').onclick=()=>setPause(false);$('#pause').onclick=()=>setPause(!paused);$('#restart').onclick=reset;$('#again').onclick=reset;
 $('#wordmark').onclick=e=>{e.preventDefault();$('#controls').showModal();};
 $('#sound').onclick=()=>{$('#sound span').textContent=audio.toggle()?'ON':'OFF';narrator.setMuted(!audio.enabled);};
-$('#help').onclick=()=>{$('#controls').showModal();keys.clear();};$('#close-help').onclick=()=>$('#controls').close();
+$('#help').onclick=()=>{$('#controls').showModal();keys.clear();releaseBoostIfUnheld();};$('#close-help').onclick=()=>$('#controls').close();
 $('#continue').onclick=()=>{freeplay=true;$('#ending').hidden=true;$('#hud').hidden=false;$('#objective').textContent='Feed the newborn singularity. Every swallowed star makes it grow.';nextSpawn=time+2;narrator.say(NARRATION.singularity);};
 window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat)return;if((e.code==='Space'||e.code==='ShiftLeft')&&started&&!opening&&dashTime===0&&!paused&&!$('#controls').open){dashQueued=true;dashPointer.copy(pointer);}if(e.code==='KeyP'||e.code==='Escape'){if($('#controls').open)return;setPause(!paused);}if(e.code==='KeyM')$('#sound').click();if(e.code==='KeyR'&&!$('#controls').open)reset();keys.add(e.code);});
-window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(started&&collapseTime<0)setPause(true);});
+window.addEventListener('keyup',e=>{keys.delete(e.code);releaseBoostIfUnheld();});window.addEventListener('blur',()=>{keys.clear();releaseBoostIfUnheld();if(started&&collapseTime<0)setPause(true);});
 $('#world').addEventListener('pointermove',e=>{if(!started||opening||paused||$('#controls').open)return;pointer.set(e.clientX/innerWidth*2-1,1-e.clientY/innerHeight*2);});
 $('#world').addEventListener('pointerleave',()=>pointer.set(0,0));
 $('#world').addEventListener('wheel',e=>{zoom=T.MathUtils.clamp(zoom+e.deltaY*.009,4.2,24);},{passive:true});
-document.addEventListener('visibilitychange',()=>{last=performance.now();keys.clear();narrator.setPaused(document.hidden||paused||$('#controls').open);});
+document.addEventListener('visibilitychange',()=>{last=performance.now();keys.clear();releaseBoostIfUnheld();narrator.setPaused(document.hidden||paused||$('#controls').open);});
 function resizeRendering(){const ratio=renderPixelRatio(innerWidth,innerHeight,devicePixelRatio,renderQuality.scale);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(ratio);renderer.setSize(innerWidth,innerHeight);composer.setPixelRatio(ratio);composer.setSize(innerWidth,innerHeight);starfield.setPixelRatio(ratio);}
 resizeRendering();
 window.addEventListener('resize',()=>{renderQuality.reset();resizeRendering();});
 function updateMovement(dt){
  previousPlayer.copy(player);
+ releaseBoostIfUnheld();
  const wasBoosting=starBoost.active;starBoost.update(dt);
- if(wasBoosting&&!starBoost.active){dashTime=0;recoveryTime=JET_RECOVERY;boostCoast=0;if(pendingTravelLights)spawnTravelLights();}
+ if(wasBoosting&&!starBoost.active)endStarBoost();
  const turn=starBoost.active?STAR_BOOST_STEERING:1;
  if(!attractMode){yaw-=steeringRate(pointer.x)*dt*turn;pitch=T.MathUtils.clamp(pitch+steeringRate(pointer.y)*dt*turn,-1.48,1.48);}
  if(keys.has('ArrowLeft'))yaw+=dt*1.44*turn;if(keys.has('ArrowRight'))yaw-=dt*1.44*turn;if(keys.has('ArrowUp'))pitch=Math.min(1.48,pitch+dt*.96*turn);if(keys.has('ArrowDown'))pitch=Math.max(-1.48,pitch-dt*.96*turn);
@@ -300,7 +307,7 @@ function updateStarCinematic(dt){
  kali.core.getWorldPosition(look);
  const angle=-.7+t*.10,dist=T.MathUtils.lerp(7,5.2,smooth(0,6,t));
  desiredCamera.set(Math.sin(angle)*dist,1.3+Math.sin(t*.25)*.35,Math.cos(angle)*dist).add(look);
- if(t>=11){starEnded=true;keys.clear();pointer.set(0,0);dashQueued=false;cameraAnchor.copy(player);
+ if(t>=11){starEnded=true;keys.clear();releaseBoostIfUnheld();pointer.set(0,0);dashQueued=false;cameraAnchor.copy(player);
   camera.getWorldDirection(facing);yaw=Math.atan2(-facing.x,-facing.z);pitch=Math.asin(T.MathUtils.clamp(facing.y,-1,1));
   document.body.classList.remove('cinematic');$('#caption').textContent='';$('#hud').hidden=false;nextSpawn=time+2;
   say(NARRATION.star,8);
@@ -318,7 +325,7 @@ function updateCinematic(dt){
   // Keep the final lines as an in-game message, with uninterrupted narration.
   say(NARRATION.ending,14);narrator.say(NARRATION.singularity);
   $('#objective').textContent='Feed the newborn singularity. Every swallowed star makes it grow.';nextSpawn=time+2;
-  keys.clear();pointer.set(0,0);dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);cameraAnchor.copy(player);
+  keys.clear();releaseBoostIfUnheld();pointer.set(0,0);dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);cameraAnchor.copy(player);
   camera.getWorldDirection(facing);yaw=Math.atan2(-facing.x,-facing.z);pitch=Math.asin(T.MathUtils.clamp(facing.y,-1,1));
  }
 }
