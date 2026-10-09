@@ -12,7 +12,7 @@ export function createStarfield(scene){
   for(let i=0;i<count;i++){
    if(alive[i]<=0){vacant.push(i);continue;}
    p.fromArray(positions,i*3).sub(player);const distance=p.length();
-   if(distance<65&&room>0){promote(p.clone().add(player));alive[i]=0;retiring[i]=0;room--;vacant.push(i);dirty=true;continue;}
+   if(distance<65&&room>0){const result=promote(p.clone().add(player),room),used=typeof result==='number'?result:1;if(used>0){alive[i]=0;retiring[i]=0;room-=used;vacant.push(i);dirty=true;continue;}}
    if(distance>760)retiring[i]=1;
    if(retiring[i]){alive[i]=Math.max(0,alive[i]-dt/4);dirty=true;if(alive[i]===0)vacant.push(i);continue;}
    const sector=starSector(p.x,p.y,p.z);sectors[i]=sector;bins[sector]++;active++;

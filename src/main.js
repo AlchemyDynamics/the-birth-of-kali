@@ -11,7 +11,7 @@ import {Narrator} from './narration.js';
 import {createInnerCosmos} from './inner-cosmos.js';
 import {NARRATION} from './narration-lines.js';
 import {createStarfield} from './starfield.js';
-import {jetAim,travelLightPositions} from './navigation.js';
+import {jetAim,travelLightPositions,lightClusterPositions} from './navigation.js';
 import {feedingArms} from './simulation.js';
 import {stabilizedRollAngle,ROLL_FINISH_TIME,smallJetRotation,smallJetAngle,SMALL_JET_SETTLE_TIME} from './roll-motion.js';
 import {nearestPathLight,nearerEye} from './attention.js';
@@ -65,7 +65,7 @@ function recordTravelJet(heading){
  if(travelJets===3){travelJets=0;pendingTravelLights=true;}
 }
 function spawnTravelLights(){
- const positions=travelLightPositions(player,travelHeading);
+ const positions=travelLightPositions(player,travelHeading,Math.random,food);
  // Recycle only unclaimed lights when the field is full; carried meals stay attached.
  const loose=wisps.filter(w=>w.owner===null&&!w.eaten).sort((a,b)=>b.position.distanceToSquared(player)-a.position.distanceToSquared(player));
  for(let i=0;i<Math.max(0,loose.length+positions.length-28);i++){const w=loose[i];scene.remove(w.sprite);w.sprite.material.dispose();w.center.geometry.dispose();w.center.material.dispose();wisps.splice(wisps.indexOf(w),1);}
@@ -96,7 +96,7 @@ function spawnWisp(pos,first=false,music=null){
 }
 function cluster(){
  const forward=new T.Vector3(0,0,-1).applyEuler(new T.Euler(pitch,yaw,0,'YXZ'));
- spawnHarmonicLights(travelLightPositions(player,forward));
+ spawnHarmonicLights(travelLightPositions(player,forward,Math.random,food));
 }
 function say(text,seconds=7){narrator.say(text);$('#message').textContent=text;messageUntil=time+seconds;$('#message').style.opacity=1;}
 function setStage(){
@@ -254,7 +254,14 @@ function updateWisps(dt){
  let si=0;for(const w of wisps){for(let j=0;j<24&&si<1400;j++,si++){const u=j/24,a=w.seed+j*2.399+time*.23,r=.05+u*.48;snowPos[si*3]=w.position.x+Math.sin(a)*r;snowPos[si*3+1]=w.position.y+u*1.4;snowPos[si*3+2]=w.position.z+Math.cos(a)*r;const b=(1-u)*w.sprite.material.opacity;snowColor.set([b*.1,b*.42,b*.9],si*3);}}snowGeo.setDrawRange(0,si);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.color.needsUpdate=true;
  const fieldLimit=Math.min(28,MAX_WISPS+Math.floor(food/8)*3),batch=6;
  if(started&&food>0&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch)cluster();nextSpawn=time+SPAWN_INTERVAL;}
- starfield.update(time,dt,food,player,p=>spawnWisp(p),canSwim()?Math.max(0,fieldLimit-wisps.length):0);
+ starfield.update(time,dt,food,player,(p,room)=>{
+  if(food<8){spawnWisp(p);return 1;}
+  if(room<2)return 0;
+  const count=Math.min(room,2+Math.floor(Math.random()*5));
+  const heading=p.clone().sub(player).normalize(),right=new T.Vector3().crossVectors(heading,new T.Vector3(0,1,0));
+  if(right.lengthSq()<.001)right.set(1,0,0);right.normalize();
+  spawnHarmonicLights(lightClusterPositions(p,right,new T.Vector3().crossVectors(right,heading).normalize(),count));return count;
+ },canSwim()?Math.max(0,fieldLimit-wisps.length):0);
 }
 function updateStarCinematic(dt){
  starTime+=dt;const t=starTime;
