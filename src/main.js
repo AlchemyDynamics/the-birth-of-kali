@@ -61,10 +61,12 @@ function beginJetRoll(){
 const aimRay=new T.Raycaster(),aimDirection=new T.Vector3(),dashPointer=new T.Vector2();
 const travelHeading=new T.Vector3();let travelJets=0,pendingTravelLights=false,travelClusters=0;
 function recordTravelJet(heading){
+ if(food<2)return;
  if(travelJets===0||travelHeading.dot(heading)<Math.cos(Math.PI/7.2)){travelHeading.copy(heading);travelJets=1;}else travelJets++;
  if(travelJets===3){travelJets=0;pendingTravelLights=true;}
 }
 function spawnTravelLights(){
+ if(food<2){pendingTravelLights=false;return;}
  const positions=travelLightPositions(player,travelHeading,Math.random,food);
  // Recycle only unclaimed lights when the field is full; carried meals stay attached.
  const loose=wisps.filter(w=>w.owner===null&&!w.eaten).sort((a,b)=>b.position.distanceToSquared(player)-a.position.distanceToSquared(player));
@@ -102,7 +104,7 @@ function say(text,seconds=7){narrator.say(text);$('#message').textContent=text;m
 function setStage(){
  const p=phaseFor(food);const texts={
  'first-light':['I / THE FIRST LIGHT','Curiosity','Approach the lonely blue ember.'],
- awakening:['II / A TASTE OF CREATION','Hunger','Investigate the light within your void.'],
+ awakening:['II / A TASTE OF CREATION','Hunger',NARRATION.hunger],
  nebula:['III / THE LIGHT WITHIN','Becoming',NARRATION.nebula],
  star:['IV / A BLUE SUPERGIANT','Growing power','Keep feeding. Even a star has a limit.'],
  singularity:['V / THE DARKNESS WITHIN','Singularity','Feed the newborn singularity. Every swallowed star makes it grow.']};
@@ -112,7 +114,7 @@ function setStage(){
 }
 let starTime=-1,starEnded=false;
 function canSwim(){return !(starTime>=0&&!starEnded)&&(collapseTime<0||freeplay);}
-function consume(w){if(!canSwim()||food>=56&&!freeplay)return;food++;audio.eat(w.note,w.noteGain);setStage();if(food===1)nextSpawn=time+2;if(food===24&&!starEnded){starTime=0;narrator.clear();audio.tone(329.63,6,.10);document.body.classList.add('cinematic');$('#hud').hidden=true;keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);}
+function consume(w){if(!canSwim()||food>=56&&!freeplay)return;food++;audio.eat(w.note,w.noteGain);setStage();if(food===1)nextSpawn=Infinity;if(food===2){say(NARRATION.secondMeal,5);nextSpawn=time+4;}if(food===24&&!starEnded){starTime=0;narrator.clear();audio.tone(329.63,6,.10);document.body.classList.add('cinematic');$('#hud').hidden=true;keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;velocity.set(0,0,0);}
 if(food===56&&!ended){collapseTime=0;narrator.clear();document.body.classList.add('cinematic');$('#hud').hidden=true;audio.collapse();keys.clear();dashQueued=false;dashTime=0;recoveryTime=0;pulse=0;rollActive=false;jetBoost=1;}}
 function begin(){
  if(started)return;if(audio.enabled)audio.init();started=true;opening=true;openingTime=0;firstSpawned=true;
@@ -169,7 +171,9 @@ function updateOpening(dt){
  if(t>=12){const handoff=smooth(12,15,t);desiredCamera.lerp(new T.Vector3(1.8,.9,zoom).applyEuler(new T.Euler(pitch,yaw,0,'YXZ')),handoff);const view=new T.Vector3(0,0,-1).applyEuler(new T.Euler(pitch,yaw,0,'YXZ'));look.lerp(desiredCamera.clone().addScaledVector(view,60),handoff);}
  if(shotTime>=5&&shotTime<8){const eyeBlend=smooth(5,5.6,shotTime)*(1-smooth(7.3,8,shotTime));const eye=new T.Vector3(1.4,.3,.02);desiredCamera.lerp(new T.Vector3(2.65,.52,.5),eyeBlend);look.lerp(eye,eyeBlend);}
  camera.position.lerp(desiredCamera,1-Math.exp(-dt*6));camera.lookAt(look);for(const eye of kali.organicEyes)eye.reflectLight(openingLight.position,camera.position);composer.render();
- if(t>=15){for(const eye of kali.organicEyes){eye.cinematic.active=false;eye.reflection.material.opacity=0;}for(const l of wispLights)l.color.setHex(0x329bff);openingDust.visible=false;openingHaze.visible=false;opening=false;for(const other of kali.arms){other.cinematicGoal=null;other.cinematicBlend=0;}arm.cinematicGoal=null;arm.cinematicBlend=0;arm.elapsed=0;arm.feeding=false;swimPose.copy(kali.group.quaternion);cameraAnchor.copy(player);keys.clear();pointer.set(0,0);dashQueued=false;$('#caption').textContent='';document.body.classList.remove('cinematic');$('#hud').hidden=false;nextSpawn=time+.5;narrator.say(NARRATION.hunger);}
+ if(t>=15){for(const eye of kali.organicEyes){eye.cinematic.active=false;eye.reflection.material.opacity=0;}for(const l of wispLights)l.color.setHex(0x329bff);openingDust.visible=false;openingHaze.visible=false;opening=false;for(const other of kali.arms){other.cinematicGoal=null;other.cinematicBlend=0;}arm.cinematicGoal=null;arm.cinematicBlend=0;arm.elapsed=0;arm.feeding=false;swimPose.copy(kali.group.quaternion);cameraAnchor.copy(player);keys.clear();pointer.set(0,0);dashQueued=false;$('#caption').textContent='';document.body.classList.remove('cinematic');$('#hud').hidden=false;nextSpawn=Infinity;say(NARRATION.hunger);
+ const forward=camera.getWorldDirection(new T.Vector3()),above=new T.Vector3(0,1,0).applyQuaternion(camera.quaternion);
+ spawnWisp(camera.position.clone().addScaledVector(forward,zoom+JET_DISTANCE*3.5).addScaledVector(above,3));}
 }
 function setPause(value){if(!started||collapseTime>=0&&!ended)return;paused=value;$('#paused').hidden=!paused;$('#pause').textContent=paused?'▷':'Ⅱ';keys.clear();pointer.set(0,0);dashQueued=false;}
 function reset(){location.href=location.pathname;}
@@ -253,7 +257,7 @@ function updateWisps(dt){
  for(let i=0;i<wispLights.length;i++){const w=near[i],l=wispLights[i];l.intensity=w?w.sprite.material.opacity*(w.first?42:18)*(w.brightness||1):0;if(w)l.position.copy(w.position);}
  let si=0;for(const w of wisps){for(let j=0;j<24&&si<1400;j++,si++){const u=j/24,a=w.seed+j*2.399+time*.23,r=.05+u*.48;snowPos[si*3]=w.position.x+Math.sin(a)*r;snowPos[si*3+1]=w.position.y+u*1.4;snowPos[si*3+2]=w.position.z+Math.cos(a)*r;const b=(1-u)*w.sprite.material.opacity;snowColor.set([b*.1,b*.42,b*.9],si*3);}}snowGeo.setDrawRange(0,si);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.color.needsUpdate=true;
  const fieldLimit=Math.min(28,MAX_WISPS+Math.floor(food/8)*3),batch=6;
- if(started&&food>0&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch)cluster();nextSpawn=time+SPAWN_INTERVAL;}
+ if(started&&food>=2&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch)cluster();nextSpawn=time+SPAWN_INTERVAL;}
  starfield.update(time,dt,food,player,(p,room)=>{
   if(food<8){spawnWisp(p);return 1;}
   if(room<2)return 0;

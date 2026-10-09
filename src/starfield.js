@@ -7,7 +7,7 @@ export function createStarfield(scene){
  const mat=new T.ShaderMaterial({transparent:true,depthWrite:false,blending:T.AdditiveBlending,uniforms:{time:{value:0},pixelRatio:{value:Math.min(devicePixelRatio,1.75)}},vertexShader:`attribute float birth;attribute float alive;uniform float time;uniform float pixelRatio;varying vec3 color;varying float fade;void main(){vec4 p=modelViewMatrix*vec4(position,1.);float d=length(p.xyz);color=mix(vec3(.035,.26,1.),vec3(1.1,1.25,1.4),smoothstep(80.,420.,d));fade=alive*smoothstep(0.,6.,time-birth)*(.72+.12*sin(time*.6+birth))*(1.-smoothstep(680.,730.,d));gl_PointSize=clamp(650./max(1.,d),2.4,5.5)*pixelRatio;gl_Position=projectionMatrix*p;}`,fragmentShader:`varying vec3 color;varying float fade;void main(){float r=length(gl_PointCoord-.5)*2.;float a=exp(-r*r*2.5)*(1.-smoothstep(.7,1.,r));gl_FragColor=vec4(color,fade*a);}`});
  const points=new T.Points(geo,mat);points.frustumCulled=false;scene.add(points);let count=0,budget=0,serial=0;const p=new T.Vector3(),bins=new Uint16Array(SECTORS),sectors=new Uint8Array(capacity);
  function update(time,dt,food,player,promote,room){
-  mat.uniforms.time.value=time;if(food===0)return;
+  mat.uniforms.time.value=time;if(food<2)return;
   bins.fill(0);let dirty=false,active=0;const vacant=[];
   for(let i=0;i<count;i++){
    if(alive[i]<=0){vacant.push(i);continue;}
