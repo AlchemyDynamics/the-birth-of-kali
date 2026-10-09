@@ -44,5 +44,5 @@ export function travelLightPositions(player,heading,random=Math.random,food=0){
 
 export function lightClusterPositions(center,right,up,count=3,random=Math.random){
  const phase=random()*Math.PI*2;
- return Array.from({length:count},(_,i)=>{const a=phase+i*Math.PI*2/count,r=1.2+random()*.5;return center.clone().addScaledVector(right,Math.cos(a)*r).addScaledVector(up,Math.sin(a)*r);});
+ return Array.from({length:count},(_,i)=>{const a=phase+i*Math.PI*2/count,r=1.8+random()*.75;return center.clone().addScaledVector(right,Math.cos(a)*r).addScaledVector(up,Math.sin(a)*r);});
 }

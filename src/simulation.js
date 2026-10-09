@@ -27,7 +27,7 @@ export function steeringRate(value){const a=Math.abs(value);return a<.12?0:Math.
 // A wisp is reserved by exactly one arm. Consumption is committed only at the mouth.
 export function reserve(arm,wisp){if(arm.target||wisp.owner!==null||wisp.eaten)return false;arm.target=wisp;arm.elapsed=0;arm.mealDuration=null;arm.feedDelay=0;wisp.owner=arm.index;return true;}
 // Choose once per meal; pauses preserve both progress and its 1-2 second duration.
-export function advanceFeeding(arm,dt,canFeed=true){if(!arm.target||!canFeed)return null;if(arm.feedDelay>0){const waiting=Math.min(dt,arm.feedDelay);arm.feedDelay-=waiting;dt-=waiting;if(dt<=0)return null;}arm.mealDuration??=1+Math.random();arm.elapsed+=dt*3.2/arm.mealDuration;if(arm.elapsed<3.2-1e-9)return null;const w=arm.target;w.eaten=true;arm.target=null;return w;}
+export function advanceFeeding(arm,dt,canFeed=true){if(!arm.target||!canFeed)return null;dt*=1.5;if(arm.feedDelay>0){const waiting=Math.min(dt,arm.feedDelay);arm.feedDelay-=waiting;dt-=waiting;if(dt<=0)return null;}arm.mealDuration??=1+Math.random();arm.elapsed+=dt*3.2/arm.mealDuration;if(arm.elapsed<3.2-1e-9)return null;const w=arm.target;w.eaten=true;arm.target=null;return w;}
 export function captureLight(arms,wisp){
  if(wisp.owner!==null||wisp.eaten)return null;
  const arm=arms.reduce((best,a)=>((a.target?1:0)+(a.cargo?.length||0)<(best.target?1:0)+(best.cargo?.length||0))?a:best);

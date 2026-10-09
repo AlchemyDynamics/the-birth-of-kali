@@ -26,7 +26,7 @@ const renderQuality=createRenderQuality();
 renderer.setPixelRatio(renderPixelRatio(innerWidth,innerHeight,devicePixelRatio));renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0x000000);renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
 const scene=new T.Scene(),camera=new T.PerspectiveCamera(48,innerWidth/innerHeight,.1,900);
 const starfield=createStarfield(scene);
-const composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));const bloom=new UnrealBloomPass(new T.Vector2(innerWidth,innerHeight),.8,.65,.7);composer.addPass(bloom);composer.addPass(new OutputPass());
+const composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));const bloom=new UnrealBloomPass(new T.Vector2(innerWidth,innerHeight),.64,.65,.7);composer.addPass(bloom);composer.addPass(new OutputPass());
 // Keep the event horizon light-absorbing after bloom; bend the nearby disk image.
 const horizon=new ShaderPass({uniforms:{tDiffuse:{value:null},center:{value:new T.Vector2(.5,.5)},radius:{value:0},aspect:{value:innerWidth/innerHeight},amount:{value:0}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`uniform sampler2D tDiffuse;uniform vec2 center;uniform float radius;uniform float aspect;uniform float amount;varying vec2 vUv;void main(){vec2 delta=vUv-center;vec2 metric=delta*vec2(aspect,1.);float d=length(metric);float lens=amount*.035*exp(-pow((d-radius*1.3)/max(radius*.5,.0001),2.));vec2 uv=vUv-delta*lens;vec4 color=texture2D(tDiffuse,uv);float feather=max(radius*.075,fwidth(d));float horizonMask=smoothstep(radius-feather,radius+feather,d);color.rgb*=mix(1.,horizonMask,amount);gl_FragColor=color;}`});composer.addPass(horizon);
 const kali=createKali();scene.add(kali.group);
@@ -38,7 +38,7 @@ const cameraAnchor=new T.Vector3();
 const previousPlayer=new T.Vector3();let collected=0,settledTime=0;
 const snowGeo=new T.BufferGeometry(),snowPos=new Float32Array(1400*3),snowColor=new Float32Array(1400*3);snowGeo.setAttribute('position',new T.BufferAttribute(snowPos,3));snowGeo.setAttribute('color',new T.BufferAttribute(snowColor,3));const snow=new T.Points(snowGeo,new T.PointsMaterial({map:tex,size:.12,transparent:true,depthWrite:false,blending:T.AdditiveBlending,vertexColors:true}));snow.frustumCulled=false;scene.add(snow);
 let started=false,paused=false,food=0,time=0,age=0,last=performance.now(),yaw=0,pitch=.08,zoom=11.34705,pulse=0,cooldown=0,nextSpawn=0,collapseTime=-1,ended=false,freeplay=false,drag=false,lastMouse=[0,0],messageUntil=0,phase='first-light',spawnSerial=0;
-let opening=false,openingTime=0,openingLight=null,openingCaptured=false,openingEaten=false,openingMealDuration=1+Math.random();
+let opening=false,openingTime=0,openingLight=null,openingCaptured=false,openingEaten=false,openingMealDuration=(1+Math.random())/1.5;
 const openingOrigin=new T.Vector3(3,-1.8,3.5),openingMouth=new T.Vector3(0,-.95,.05);
 let attractMode=new URLSearchParams(location.search).has('autoplay');
 const pointer=new T.Vector2();let dashQueued=false,dashTime=0,recoveryTime=0,firstSpawned=false;
@@ -85,7 +85,7 @@ function spawnHarmonicLights(positions){
  while(remaining.size){
   const group=[remaining.values().next().value];remaining.delete(group[0]);
   // Assign a whole chord to each physical cluster, including close pairs.
-  for(let i=0;i<group.length;i++)for(const p of remaining){if(p.distanceTo(group[i])<4){group.push(p);remaining.delete(p);}}
+  for(let i=0;i<group.length;i++)for(const p of remaining){if(p.distanceTo(group[i])<6){group.push(p);remaining.delete(p);}}
   const notes=harmony.next(group.length);group.forEach((position,i)=>spawnWisp(position,false,notes[i]));
  }
 }
