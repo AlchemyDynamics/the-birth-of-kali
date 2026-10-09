@@ -250,7 +250,8 @@ function updateMovement(dt){
  else{rot.setFromEuler(new T.Euler(moving?-.14:0,bodyYaw,eyeLean,'YXZ'));rot.slerp(jetPose,smooth(0,JET_RECOVERY,recoveryTime));}
  swimPose.slerp(rot,1-Math.exp(-dt*(dashTime>0?16:8)));
  // Apply the roll after steering smoothing; carry its final bank into the recovery pose.
- if(rollActive)rollElapsed+=dt;
+ // Ordinary rolls run at 80% speed; fueled boost spin has its own clock below.
+ if(rollActive&&!boostRolling)rollElapsed+=dt*.8;
  if(boostRolling){
   if(starBoost.active)boostAngularSpeed=T.MathUtils.lerp(boostAngularSpeed,Math.sign(rollTarget)*TAU*1.15*1.3,1-Math.exp(-dt*7));
   else {boostCoast+=dt;boostAngularSpeed*=Math.exp(-dt*9);}
