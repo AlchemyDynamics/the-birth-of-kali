@@ -262,8 +262,10 @@ function updateWisps(dt){
  const spawnRate=food>=COLLAPSE?2:1,fieldLimit=Math.min(28,MAX_WISPS+Math.floor(food/8)*3)*spawnRate,batch=6;
  if(started&&food>=2&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch)cluster();nextSpawn=time+(food<14?8:SPAWN_INTERVAL)/spawnRate;}
  starfield.update(time,dt,food,player,(p,room)=>{
-  if(food<14)return 0;
-  if(room<2)return 0;
+  if(room<1)return 0;
+  // Approached background stars must be collectible even during discovery
+  // or when only one slot remains in the blue-light field.
+  if(food<14||room===1){const w=spawnWisp(p);if(p.distanceTo(player)<=REACH+5)w.born=time-3;return 1;}
   const count=Math.min(room,clusterCount());
   const heading=p.clone().sub(player).normalize(),right=new T.Vector3().crossVectors(heading,new T.Vector3(0,1,0));
   if(right.lengthSq()<.001)right.set(1,0,0);right.normalize();
