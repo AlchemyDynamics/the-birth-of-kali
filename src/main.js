@@ -72,7 +72,7 @@ function spawnTravelLights(){
  const positions=travelLightPositions(player,travelHeading,Math.random,food);
  // Recycle only unclaimed lights when the field is full; carried meals stay attached.
  const loose=wisps.filter(w=>w.owner===null&&!w.eaten).sort((a,b)=>b.position.distanceToSquared(player)-a.position.distanceToSquared(player));
- for(let i=0;i<Math.max(0,loose.length+positions.length-28);i++){const w=loose[i];scene.remove(w.sprite);w.sprite.material.dispose();w.center.geometry.dispose();w.center.material.dispose();wisps.splice(wisps.indexOf(w),1);}
+ for(let i=0;i<Math.max(0,loose.length+positions.length-(food>=COLLAPSE?56:28));i++){const w=loose[i];scene.remove(w.sprite);w.sprite.material.dispose();w.center.geometry.dispose();w.center.material.dispose();wisps.splice(wisps.indexOf(w),1);}
  spawnHarmonicLights(positions);
  travelClusters++;pendingTravelLights=false;
 }
@@ -258,8 +258,9 @@ function updateWisps(dt){
  const near=wisps.filter(w=>!w.eaten).sort((a,b)=>a.position.distanceToSquared(player)-b.position.distanceToSquared(player));
  for(let i=0;i<wispLights.length;i++){const w=near[i],l=wispLights[i];l.intensity=w?w.sprite.material.opacity*(w.first?42:18)*(w.brightness||1):0;if(w)l.position.copy(w.position);}
  let si=0;for(const w of wisps){for(let j=0;j<24&&si<1400;j++,si++){const u=j/24,a=w.seed+j*2.399+time*.23,r=.05+u*.48;snowPos[si*3]=w.position.x+Math.sin(a)*r;snowPos[si*3+1]=w.position.y+u*1.4;snowPos[si*3+2]=w.position.z+Math.cos(a)*r;const b=(1-u)*w.sprite.material.opacity;snowColor.set([b*.1,b*.42,b*.9],si*3);}}snowGeo.setDrawRange(0,si);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.color.needsUpdate=true;
- const fieldLimit=Math.min(28,MAX_WISPS+Math.floor(food/8)*3),batch=6;
- if(started&&food>=2&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch&&(food>=14||wisps.length===0))cluster();nextSpawn=time+SPAWN_INTERVAL;}
+ // A formed singularity draws twice the blue-light flow into her void.
+ const spawnRate=food>=COLLAPSE?2:1,fieldLimit=Math.min(28,MAX_WISPS+Math.floor(food/8)*3)*spawnRate,batch=6;
+ if(started&&food>=2&&(canSwim())&&time>nextSpawn){if(wisps.length<=fieldLimit-batch&&(food>=14||wisps.length===0))cluster();nextSpawn=time+SPAWN_INTERVAL/spawnRate;}
  starfield.update(time,dt,food,player,(p,room)=>{
   if(food<14)return 0;
   if(room<2)return 0;
