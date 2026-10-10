@@ -29,7 +29,7 @@ export function createBlastPulse(scene,texture){
    centroid.set(0,0,0);for(const w of b.stars)centroid.add(w.position);
    if(b.stars.length)centroid.multiplyScalar(1/b.stars.length);else centroid.copy(player).addScaledVector(heading,-5.5);
    let extent=.45;for(const w of b.stars)extent=Math.max(extent,w.position.distanceTo(centroid));
-   b.peakRadius=T.MathUtils.clamp(extent+.2,.8,2.2);
+   b.peakRadius=.9*T.MathUtils.clamp(extent+.2,.8,2.2);
    b.group.position.copy(centroid);b.group.visible=true;b.sphere.material.uniforms.power.value=0;b.halo.material.opacity=0;
   },
   update(dt){
@@ -38,9 +38,10 @@ export function createBlastPulse(scene,texture){
     if(t>=1.5){b.group.visible=false;b.radius=0;b.stars=[];continue;}
     const stars=b.stars.filter(w=>!w.eaten&&w.owner!==null);
     if(stars.length){centroid.set(0,0,0);for(const w of stars)centroid.add(w.position);centroid.multiplyScalar(1/stars.length);b.group.position.copy(centroid);}
-    const swell=smooth(0,.3,t),contract=1-smooth(.38,1.5,t);
+    // Give the swell time to read, then keep the shrinking surface visible before fading.
+    const swell=smooth(0,.45,t),contract=1-smooth(.52,1.4,t);
     b.radius=b.peakRadius*swell*contract;
-    const power=smooth(0,.16,t)*(1-smooth(.45,1.5,t));
+    const power=smooth(0,.16,t)*(1-smooth(1,1.5,t));
     b.sphere.scale.setScalar(b.radius);b.sphere.material.uniforms.power.value=power;b.sphere.material.uniforms.time.value=t;
     b.halo.scale.setScalar(b.radius*2.6);b.halo.material.opacity=.10*power;
     if(10*power>lamp.intensity){lamp.intensity=10*power;lamp.position.copy(b.group.position);}
