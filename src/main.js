@@ -3,7 +3,7 @@ import {createStarBoost,STAR_BOOST_SPEED,STAR_BOOST_STEERING} from './star-boost
 import {createBoostTrail} from './boost-trail.js';
 import {STAR_BOOST_ENABLED,BLAST_JET_MULTIPLIER,blastJetAvailable} from './movement-abilities.js';
 import {createBlastPulse} from './blast-pulse.js';
-import {createChargeBoost,chargeMultiplier} from './charge-boost.js';
+import {createChargeBoost,chargeMultiplier,CHARGED_JET_DURATION} from './charge-boost.js';
 import {createChargePlasma} from './charge-plasma.js';
 import {FINAL_STARS,clusterCount} from './progression.js';
 import {FinalScene} from './final-scene.js';
@@ -60,7 +60,7 @@ const boostTrail=STAR_BOOST_ENABLED?createBoostTrail(scene,tex):null;
 const starBoost=createStarBoost(kali.arms,()=>{boostTrail?.ignite();audio.jet();});
 const blastPulse=createBlastPulse(scene,tex);let blastJet=false;
 const chargeBoost=createChargeBoost(),chargePlasma=createChargePlasma(scene,tex);
-let chargedQueued=0,chargedJet=0,chargedShots=0,chargePose=0,chargeClusters=0;
+let chargedQueued=0,chargedJet=0,chargedShots=0,chargePose=0,chargeClusters=0,activeJetDuration=JET_DURATION,foomLens=0;
 function plasmaAvailable(){return blastJetAvailable(food,starEnded,wisps.filter(w=>w.owner!==null&&!w.eaten).length);}
 function boostHeld(){return keys.has('Space')||keys.has('ShiftLeft');}
 function endStarBoost(){
@@ -253,16 +253,16 @@ function updateMovement(dt){
  const previousDash=dashTime;dashTime=starBoost.active?JET_DURATION:Math.max(0,dashTime-dt);if(previousDash>0&&dashTime===0){recoveryTime=JET_RECOVERY;if(pendingTravelLights)spawnTravelLights();}else recoveryTime=Math.max(0,recoveryTime-dt);
  if((dashQueued||chargedQueued>0)&&dashTime===0){
   const q=plasmaAvailable()?chargedQueued:0;chargedQueued=0;chargedJet=q;
-  aimRay.setFromCamera(dashPointer,camera);aimDirection.copy(jetAim(aimRay.ray,player,wisps));dashTime=JET_DURATION;recoveryTime=0;jetPose.setFromUnitVectors(new T.Vector3(0,1,0),aimDirection);pulse=1;
+  aimRay.setFromCamera(dashPointer,camera);aimDirection.copy(jetAim(aimRay.ray,player,wisps));activeJetDuration=q>0?CHARGED_JET_DURATION:JET_DURATION;dashTime=activeJetDuration;recoveryTime=0;jetPose.setFromUnitVectors(new T.Vector3(0,1,0),aimDirection);pulse=1;
   if(q>0){swimPose.copy(kali.group.quaternion);rollActive=false;microJet.active=false;boostRolling=false;blastJet=true;jetBoost=chargeMultiplier(q);chargedShots++;chargePlasma.fire(q);audio.foom(q);}
   else{beginJetRoll();audio.jet();}
-  velocity.copy(aimDirection).multiplyScalar(JET_SPEED*jetBoost);recordTravelJet(aimDirection);if(blastJet)blastPulse.fire(player,aimDirection,wisps);
+  velocity.copy(aimDirection).multiplyScalar(JET_SPEED*jetBoost);recordTravelJet(aimDirection);if(blastJet&&q===0)blastPulse.fire(player,aimDirection,wisps);
  }dashQueued=false;
  const previousCharge=chargeBoost.amount;
  chargeBoost.update(dt,{held:keys.has('Space'),eligible:plasmaAvailable(),recovering:dashTime===0&&recoveryTime<JET_RECOVERY-.15});
  if(previousCharge<1&&chargeBoost.amount>=1)spawnChargeLights();
  if(chargeBoost.active){if(rollActive||microJet.active)swimPose.copy(kali.group.quaternion);rollActive=false;microJet.active=false;recoveryTime=Math.max(0,recoveryTime-dt*.75);direction.multiplyScalar(.25);}
- chargePose=T.MathUtils.lerp(chargePose,chargeBoost.active?1:0,1-Math.exp(-dt*5));
+ chargePose=T.MathUtils.lerp(chargePose,chargeBoost.active?1:0,1-Math.exp(-dt*8));
  if(moving&&cooldown===0&&dashTime===0){pulse=1;cooldown=1.45;impulse=1.9;}
  if(starBoost.active){
   // The camera remains upright; propulsion and the longitudinal roll follow its heading.
@@ -305,7 +305,7 @@ function updateMovement(dt){
  else if(rollActive){rollPose.setFromAxisAngle(rollAxis,rollAngle);kali.group.quaternion.premultiply(rollPose);if(rollElapsed>=ROLL_FINISH_TIME){swimPose.copy(kali.group.quaternion);jetPose.premultiply(rollPose);rollActive=false;}}
  else if(microJet.active){microElapsed+=dt;rollPose.setFromAxisAngle(rollAxis,smallJetAngle(microElapsed,microJet.angle,microJet.duration));kali.group.quaternion.premultiply(rollPose);if(microElapsed>=microJet.duration+SMALL_JET_SETTLE_TIME){swimPose.copy(kali.group.quaternion);jetPose.premultiply(rollPose);microJet.active=false;}}
  $('#jet-hint').textContent=chargeBoost.active?(chargeBoost.amount>=1?'fully charged — release to blast':'charging — release to blast'):plasmaAvailable()?'tap to jet / hold to charge':'jet toward pointer';
- $('#speed').textContent=velocity.length().toFixed(1)+' / VELOCITY';$('#jet-status').textContent=dashTime>0?'JET / STREAMLINED':recoveryTime>0?'GLIDING / JET READY':moving?'SWIMMING / JET READY':'DRIFTING / JET READY';$('#jet-bar').style.transform=`scaleX(${dashTime>0?1-dashTime/JET_DURATION:1})`;
+ $('#speed').textContent=velocity.length().toFixed(1)+' / VELOCITY';$('#jet-status').textContent=dashTime>0?'JET / STREAMLINED':recoveryTime>0?'GLIDING / JET READY':moving?'SWIMMING / JET READY':'DRIFTING / JET READY';$('#jet-bar').style.transform=`scaleX(${dashTime>0?1-dashTime/activeJetDuration:1})`;
 }
 function updateWisps(dt){
  kali.group.updateMatrixWorld(true);
@@ -388,9 +388,11 @@ function frame(now){
  const collapsing=collapseTime>=0&&!ended,igniting=starTime>=0&&!starEnded,cinematic=collapsing||igniting||finalScene.time>=0;
  // Let the body surge ahead of a trailing position anchor; view direction still follows the mouse.
  const spinTrail=jetBoost>1?(dashTime>0?1:recoveryTime/JET_RECOVERY):0;
- const followRate=dashTime>0&&chargedJet>0?1.5:dashTime>0?(spinTrail?(blastJet?1.8:2.2):4.2):recoveryTime>0?5+7*(1-recoveryTime/JET_RECOVERY)-2*spinTrail:12;
+ const followRate=dashTime>0&&chargedJet>0?1.25:dashTime>0?(spinTrail?(blastJet?1.8:2.2):4.2):recoveryTime>0?5+7*(1-recoveryTime/JET_RECOVERY)-2*spinTrail:12;
+ foomLens=T.MathUtils.lerp(foomLens,!cinematic&&dashTime>0?chargedJet:0,1-Math.exp(-dt*(dashTime>0?12:3)));
+ camera.fov=48+7*foomLens;camera.updateProjectionMatrix();
  cameraAnchor.lerp(player,1-Math.exp(-dt*followRate));
- tmp.copy(cameraAnchor).sub(player).clampLength(0,3+(3+3*chargedJet)*spinTrail);cameraAnchor.copy(player).add(tmp);
+ tmp.copy(cameraAnchor).sub(player).clampLength(0,3+(3+6*chargedJet)*spinTrail);cameraAnchor.copy(player).add(tmp);
  if(igniting)updateStarCinematic(dt);
  else if(collapsing)updateCinematic(dt);
  else{desiredCamera.set(1.8,.9-1.2*chargePose,zoom+2*chargePose).applyEuler(new T.Euler(pitch,yaw,0,'YXZ')).add(cameraAnchor);look.copy(desiredCamera).addScaledVector(facing,60);if(!started){desiredCamera.set(0,2.3,17);look.set(0,-.3,0);}if(ended&&!freeplay){desiredCamera.set(5,3,12).add(player);look.copy(player).add(new T.Vector3(-2,0,0));}}
@@ -398,13 +400,15 @@ function frame(now){
  if(started&&!firstSpawned&&age>2){firstSpawned=true;const forward=camera.getWorldDirection(new T.Vector3());spawnWisp(camera.position.clone().addScaledVector(forward,zoom+JET_DISTANCE*4),true);}
  const collapse=collapseTime<0?0:Math.min(1,collapseTime/15);
  for(const arm of kali.arms)arm.blastSqueeze=blastPulse.squeeze*(1-chargePose);
- kali.update(time,dt,food,pulse,velocity.length(),collapse,dashTime>0?1:T.MathUtils.lerp(smooth(0,JET_RECOVERY,recoveryTime),.5,chargePose),mantlePressureFor(dashTime,recoveryTime,pulse)+chargePose*.18,0,igniting?smooth(0,5,starTime):1);if(started)updateWisps(dt);
+ kali.update(time,dt,food,pulse,velocity.length(),collapse,dashTime>0?1:T.MathUtils.lerp(smooth(0,JET_RECOVERY,recoveryTime),.5,chargePose),mantlePressureFor(dashTime*JET_DURATION/activeJetDuration,recoveryTime,pulse)+chargePose*.18,0,igniting?smooth(0,5,starTime):1);if(started)updateWisps(dt);
  boostTrail?.update(dt,starBoost.active,player,aimDirection,time);
  blastPulse.update(dt);
  chargePlasma.update(dt,time,chargeBoost.amount,kali,wisps);
  if(collapseTime>=0){kali.core.getWorldQuaternion(kali.photon.quaternion);kali.photon.quaternion.invert().multiply(camera.quaternion);}
  $('#message').style.opacity=time<messageUntil?'1':'0';
- jetParticles.material.opacity=food>0?.25:0;
+ const chargedTrail=chargedJet>0&&(dashTime>0||recoveryTime>.8);
+ jetParticles.material.color.setHex(chargedTrail?0x8b42ff:0x1c5c92);jetParticles.material.size=chargedTrail?.075:.055;
+ jetParticles.material.opacity=food>0?(chargedTrail?.4:.25):0;
  for(let i=0;i<150;i++){jetLife[i]-=dt;if(jetLife[i]>0){for(let k=0;k<3;k++)jetArr[i*3+k]+=jetVel[i*3+k]*dt;}else{jetArr[i*3]=player.x;jetArr[i*3+1]=player.y;jetArr[i*3+2]=player.z;}}
  if(pulse>.2||dashTime>0){for(let j=0;j<(dashTime>0?8:3);j++){const i=jetIndex++%150;jetLife[i]=1.5;tmp.set(0,-.7,.1).applyQuaternion(kali.group.quaternion).add(player);for(let k=0;k<3;k++){jetArr[i*3+k]=tmp.getComponent(k)+(Math.random()-.5)*.2;jetVel[i*3+k]=-facing.getComponent(k)*(dashTime>0?12:3)+(Math.random()-.5)*.7;}}}jetGeo.attributes.position.needsUpdate=true;
  if(finalScene.time>=0){
