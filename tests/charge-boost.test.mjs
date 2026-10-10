@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {createChargeBoost,chargeMultiplier} from '../src/charge-boost.js';
+const ready={held:true,eligible:true,recovering:true};
+test('tap and initial jet do not charge or release a boost',()=>{const c=createChargeBoost();c.arm();c.update(.3,{...ready,recovering:false});assert.equal(c.release(),0);assert.equal(c.armed,false);});
+test('charge scales with hold time and caps consistently across frame rates',()=>{for(const fps of [30,60,144]){const c=createChargeBoost();c.arm();for(let i=0;i<fps;i++)c.update(1/fps,ready);assert.ok(Math.abs(c.amount-.5)<1e-8);for(let i=0;i<fps*3;i++)c.update(1/fps,ready);assert.equal(c.amount,1);assert.equal(c.release(),1);assert.equal(c.release(),0);}assert.ok(chargeMultiplier(.2)<chargeMultiplier(1));assert.equal(chargeMultiplier(1),3);});
+test('loss of eligibility, cancel, and release below minimum cannot launch',()=>{for(const change of [{eligible:false},{held:false}]){const c=createChargeBoost();c.arm();c.update(1,ready);c.update(.01,{...ready,...change});assert.equal(c.release(),0);}const c=createChargeBoost();c.arm();c.update(.1,ready);assert.equal(c.release(),0);c.arm();c.update(2,ready);c.cancel();assert.equal(c.release(),0);});

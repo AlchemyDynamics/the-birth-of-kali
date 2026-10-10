@@ -14,7 +14,8 @@ Click **Enter the void** to begin the opening cinematic. Headphones, a keyboard,
 | W / S | Swim forward / backward |
 | A / D | Strafe |
 | Q / E | Descend / ascend |
-| Space or Shift | Jet toward the pointer |
+| Space | Tap to jet; hold through recovery to charge plasma, release to boost |
+| Shift | Jet toward the pointer without charging |
 | Mouse wheel | Adjust camera distance |
 | P or Escape | Pause / resume |
 | M | Toggle sound |
@@ -23,7 +24,7 @@ Click **Enter the void** to begin the opening cinematic. Headphones, a keyboard,
 
 Tentacles automatically catch nearby lights. Stop swimming to eat them; moving interrupts feeding while caught lights remain attached. Feeding follows a 92 BPM pulse, with melodic swallows on successive beats and chords of up to three notes on the same beat. Nebula, star, and black-hole stages begin at 8, 75, and 200 lights. At 75 lights, a separate Blue Supergiant ignition cinematic plays, then control returns for further feeding. At 200 lights, a second cinematic shows the collapse into a singularity. Play continues until 350 stars, when a lion’s roar interrupts her. The final cutscene holds on a close view of the black hole, then fades to black over two seconds. A “To be continued” menu offers **Start over**, returning to the title with a fresh game. The planned continuation will look through the black hole at Saedus and lead into their first confrontation.
 
-After the Blue Supergiant cutscene at 75 lights, jetting with more than eight captured, uneaten stars (nine or more) triggers a blast jet. Her tentacles squeeze inward around the trailing stars, then a compact translucent blue plasma sphere swells and contracts around their actual center, following the held lights throughout its 1.5-second pulse, travel increases by 25%, and the camera lags farther behind before catching up. Trailing stars are not consumed. This is a single burst per key press, with normal barrel-roll timing. The earlier fuel-burning boost experiment is retained in code but disabled by STAR_BOOST_ENABLED in src/movement-abilities.js.
+After the Blue Supergiant cutscene at 75 lights, jetting with more than eight captured, uneaten stars (nine or more) triggers a blast jet. Her tentacles squeeze inward around the trailing stars, then a compact translucent blue plasma sphere swells and contracts around their actual center, following the held lights throughout its 1.5-second pulse, travel increases by 25%, and the camera lags farther behind before catching up. Trailing stars are not consumed. Taps remain single bursts with normal barrel-roll timing. Hold Space through the jet and into recovery to spread her arms and charge a compact violet plasma core with electrical filaments. Release Space to fire a low “foom” and launch toward the pointer. Charge fills over two seconds; release speed scales from 1.5× to 3× normal jet speed, with stronger camera lag. Charging pauses feeding and spends no stars. Pause, help, focus loss, or loss of plasma eligibility cancels the charge. The earlier fuel-burning boost experiment is retained in code but disabled by STAR_BOOST_ENABLED in src/movement-abilities.js.
 
 ## GitHub Pages
 

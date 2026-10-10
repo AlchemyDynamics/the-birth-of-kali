@@ -42,5 +42,11 @@ export class Soundscape {
   const source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=b;filter.type='lowpass';filter.frequency.value=300;filter.Q.value=.4;
   gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.16,t+.08);gain.gain.exponentialRampToValueAtTime(.0001,t+.64);source.connect(filter).connect(gain).connect(this.master);source.start();source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
  }
+ foom(charge){
+  if(!this.enabled||!this.ctx)return;const c=this.ctx,t=c.currentTime;
+  const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.setValueAtTime(125+55*charge,t);o.frequency.exponentialRampToValueAtTime(34,t+.65);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.23+.18*charge,t+.025);g.gain.exponentialRampToValueAtTime(.0001,t+.85);
+  o.connect(g).connect(this.master);o.start();o.stop(t+.9);o.onended=()=>{o.disconnect();g.disconnect();};this.jet();
+ }
  collapse(){this.tone(110,10,.24);this.tone(164.8,8,.09);}
 }
