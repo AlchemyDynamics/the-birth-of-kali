@@ -287,7 +287,8 @@ function updateMovement(dt){
   const eyeLocal=eyeGroup.worldToLocal(attention.position.clone());eye.gazeTarget.set(T.MathUtils.clamp(-Math.atan2(eyeLocal.y,Math.max(.01,eyeLocal.z)),-.23,.23),T.MathUtils.clamp(Math.atan2(eyeLocal.x,Math.max(.01,eyeLocal.z)),-.28,.28));
   if(dashTime===0&&!rollActive&&!moving&&recoveryTime<.5){const d=attention.position.clone().sub(player),sign=index===0?-1:1,targetYaw=Math.atan2(-d.z,d.x)+(sign<0?Math.PI:0),delta=Math.atan2(Math.sin(targetYaw-bodyYaw),Math.cos(targetYaw-bodyYaw));bodyYaw+=T.MathUtils.clamp(delta,-dt*.4,dt*.4);eyeLean=T.MathUtils.clamp(Math.atan2(d.y,Math.hypot(d.x,d.z))*sign,-.2,.2);}
  }
- if(dashTime>0||rollActive||microJet.active){rot.copy(jetPose);}
+ // Keep the mantle pointed down the jet heading while banking a charge.
+ if(dashTime>0||chargeBoost.armed||rollActive||microJet.active){rot.copy(jetPose);}
  else{rot.setFromEuler(new T.Euler(moving?-.14:0,bodyYaw,eyeLean,'YXZ'));rot.slerp(jetPose,smooth(0,JET_RECOVERY,recoveryTime));}
  swimPose.slerp(rot,1-Math.exp(-dt*(dashTime>0?16:8)));
  // Apply the roll after steering smoothing; carry its final bank into the recovery pose.
@@ -397,7 +398,7 @@ function frame(now){
  if(started&&!firstSpawned&&age>2){firstSpawned=true;const forward=camera.getWorldDirection(new T.Vector3());spawnWisp(camera.position.clone().addScaledVector(forward,zoom+JET_DISTANCE*4),true);}
  const collapse=collapseTime<0?0:Math.min(1,collapseTime/15);
  for(const arm of kali.arms)arm.blastSqueeze=blastPulse.squeeze*(1-chargePose);
- kali.update(time,dt,food,pulse,velocity.length(),collapse,dashTime>0?1:smooth(0,JET_RECOVERY,recoveryTime)*(1-chargePose),mantlePressureFor(dashTime,recoveryTime,pulse)+chargePose*.18,0,igniting?smooth(0,5,starTime):1);if(started)updateWisps(dt);
+ kali.update(time,dt,food,pulse,velocity.length(),collapse,dashTime>0?1:T.MathUtils.lerp(smooth(0,JET_RECOVERY,recoveryTime),.5,chargePose),mantlePressureFor(dashTime,recoveryTime,pulse)+chargePose*.18,0,igniting?smooth(0,5,starTime):1);if(started)updateWisps(dt);
  boostTrail?.update(dt,starBoost.active,player,aimDirection,time);
  blastPulse.update(dt);
  chargePlasma.update(dt,time,chargeBoost.amount,kali,wisps);
