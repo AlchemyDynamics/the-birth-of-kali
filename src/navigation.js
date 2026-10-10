@@ -1,6 +1,7 @@
 import * as T from 'three';
 import {discoveryCount,clusterCount} from './progression.js';
 import {JET_DISTANCE,REACH} from './simulation.js';
+import {chargeMultiplier} from './charge-boost.js';
 
 export function jetAim(ray,player,wisps){
  // Aim beyond the player even when the camera is still catching up to a jet.
@@ -51,4 +52,13 @@ export function travelLightPositions(player,heading,random=Math.random,food=0){
 export function lightClusterPositions(center,right,up,count=3,random=Math.random){
  const phase=random()*Math.PI*2;
  return Array.from({length:count},(_,i)=>{const a=phase+i*Math.PI*2/count,r=1.8+random()*.75;return center.clone().addScaledVector(right,Math.cos(a)*r).addScaledVector(up,Math.sin(a)*r);});
+}
+
+// A full-charge reward lies inside one burst's travel and inside its capture corridor.
+export function chargeLightPositions(player,heading,count,random=Math.random){
+ const right=new T.Vector3().crossVectors(heading,new T.Vector3(0,1,0));
+ if(right.lengthSq()<.001)right.set(1,0,0);right.normalize();
+ const up=new T.Vector3().crossVectors(right,heading).normalize();
+ const center=player.clone().addScaledVector(heading,JET_DISTANCE*chargeMultiplier(1)*.62);
+ return lightClusterPositions(center,right,up,count,random);
 }

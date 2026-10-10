@@ -19,7 +19,7 @@ import {Narrator} from './narration.js';
 import {createInnerCosmos} from './inner-cosmos.js';
 import {NARRATION} from './narration-lines.js';
 import {createStarfield} from './starfield.js';
-import {jetAim,travelLightPositions,lightClusterPositions} from './navigation.js';
+import {jetAim,travelLightPositions,lightClusterPositions,chargeLightPositions} from './navigation.js';
 import {feedingArms} from './simulation.js';
 import {stabilizedRollAngle,ROLL_FINISH_TIME,smallJetRotation,smallJetAngle,SMALL_JET_SETTLE_TIME} from './roll-motion.js';
 import {nearestPathLight,nearerEye} from './attention.js';
@@ -60,7 +60,7 @@ const boostTrail=STAR_BOOST_ENABLED?createBoostTrail(scene,tex):null;
 const starBoost=createStarBoost(kali.arms,()=>{boostTrail?.ignite();audio.jet();});
 const blastPulse=createBlastPulse(scene,tex);let blastJet=false;
 const chargeBoost=createChargeBoost(),chargePlasma=createChargePlasma(scene,tex);
-let chargedQueued=0,chargedJet=0,chargedShots=0,chargePose=0;
+let chargedQueued=0,chargedJet=0,chargedShots=0,chargePose=0,chargeClusters=0;
 function plasmaAvailable(){return blastJetAvailable(food,starEnded,wisps.filter(w=>w.owner!==null&&!w.eaten).length);}
 function boostHeld(){return keys.has('Space')||keys.has('ShiftLeft');}
 function endStarBoost(){
@@ -102,11 +102,23 @@ function recordTravelJet(heading){
 function spawnTravelLights(){
  if(food<14){pendingTravelLights=false;return;}
  const positions=travelLightPositions(player,travelHeading,Math.random,food);
- // Recycle only unclaimed lights when the field is full; carried meals stay attached.
- const loose=wisps.filter(w=>w.owner===null&&!w.eaten).sort((a,b)=>b.position.distanceToSquared(player)-a.position.distanceToSquared(player));
- for(let i=0;i<Math.max(0,loose.length+positions.length-(food>=COLLAPSE?56:28));i++){const w=loose[i];scene.remove(w.sprite);w.sprite.material.dispose();w.center.geometry.dispose();w.center.material.dispose();wisps.splice(wisps.indexOf(w),1);}
+ reserveLightSlots(positions.length);
  spawnHarmonicLights(positions);
  travelClusters++;pendingTravelLights=false;
+}
+function reserveLightSlots(count){
+ // Recycle only unclaimed lights when the field is full; carried meals stay attached.
+ const loose=wisps.filter(w=>w.owner===null&&!w.eaten).sort((a,b)=>b.position.distanceToSquared(player)-a.position.distanceToSquared(player));
+ for(let i=0;i<Math.max(0,loose.length+count-(food>=COLLAPSE?56:28));i++){const w=loose[i];scene.remove(w.sprite);w.sprite.material.dispose();w.center.geometry.dispose();w.center.material.dispose();wisps.splice(wisps.indexOf(w),1);}
+}
+function spawnChargeLights(){
+ aimRay.setFromCamera(pointer,camera);
+ const heading=jetAim(aimRay.ray,player,wisps),positions=chargeLightPositions(player,heading,clusterCount(Math.random));
+ reserveLightSlots(positions.length);const first=wisps.length;
+ spawnHarmonicLights(positions);
+ // A full-charge release reaches these immediately; do not inherit the normal two-second catch delay.
+ for(const w of wisps.slice(first)){w.fadeSeconds=.18;w.captureDelay=0;w.chargeReward=true;}
+ chargeClusters++;
 }
 const openingDustGeo=new T.BufferGeometry(),openingDustData=new Float32Array(240*3);
 const openingDust=new T.Points(openingDustGeo,new T.PointsMaterial({map:tex,color:0x72baff,size:.035,transparent:true,opacity:0,depthWrite:false,blending:T.AdditiveBlending}));openingDustGeo.setAttribute('position',new T.BufferAttribute(openingDustData,3));openingDust.frustumCulled=false;scene.add(openingDust);
@@ -246,7 +258,9 @@ function updateMovement(dt){
   else{beginJetRoll();audio.jet();}
   velocity.copy(aimDirection).multiplyScalar(JET_SPEED*jetBoost);recordTravelJet(aimDirection);if(blastJet)blastPulse.fire(player,aimDirection,wisps);
  }dashQueued=false;
+ const previousCharge=chargeBoost.amount;
  chargeBoost.update(dt,{held:keys.has('Space'),eligible:plasmaAvailable(),recovering:dashTime===0&&recoveryTime<JET_RECOVERY-.15});
+ if(previousCharge<1&&chargeBoost.amount>=1)spawnChargeLights();
  if(chargeBoost.active){if(rollActive||microJet.active)swimPose.copy(kali.group.quaternion);rollActive=false;microJet.active=false;recoveryTime=Math.max(0,recoveryTime-dt*.75);direction.multiplyScalar(.25);}
  chargePose=T.MathUtils.lerp(chargePose,chargeBoost.active?1:0,1-Math.exp(-dt*5));
  if(moving&&cooldown===0&&dashTime===0){pulse=1;cooldown=1.45;impulse=1.9;}
@@ -303,7 +317,7 @@ function updateWisps(dt){
    const movingInput=['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE'].some(k=>keys.has(k));
    const settled=!chargeBoost.armed&&chargedQueued===0&&dashTime===0&&velocity.length()<.45&&!movingInput&&!kali.arms.some(a=>a.grabPoint);
    settledTime=settled?settledTime+dt:0;
-   if(canSwim()){const path=new T.Line3(previousPlayer,player);for(const w of wisps){if(w.eaten||w.owner!==null||time-w.born<2)continue;path.closestPointToPoint(w.position,true,tmp);if(tmp.distanceTo(w.position)<=REACH){const arm=captureLight(kali.arms,w);if(arm){arm.grabPoint=w.position.clone();arm.grabTime=0;arm.grabLight=w;collected++;audio.capture(w.noteGain,w.note);}}}}
+   if(canSwim()){const path=new T.Line3(previousPlayer,player);for(const w of wisps){if(w.eaten||w.owner!==null||time-w.born<(w.captureDelay??2))continue;path.closestPointToPoint(w.position,true,tmp);if(tmp.distanceTo(w.position)<=REACH){const arm=captureLight(kali.arms,w);if(arm){arm.grabPoint=w.position.clone();arm.grabTime=0;arm.grabLight=w;collected++;audio.capture(w.noteGain,w.note);}}}}
    tryMidJetBlast();
    const feeders=feedingArms(kali.arms,settledTime>.35&&(canSwim()),Math.random,dt);
    for(const arm of kali.arms){
@@ -408,7 +422,7 @@ function frame(now){
 }
 camera.position.set(0,2.3,17);requestAnimationFrame(frame);
 // Read-only telemetry makes full-loop smoke tests possible without bypassing feeding.
-window.kaliDemo={get state(){return {charge:chargeBoost.amount,charging:chargeBoost.active,chargeArmed:chargeBoost.armed,chargedJet,chargedShots,ionPulse:blastPulse.state,blastJet:blastJet&&(dashTime>0||recoveryTime>0),blastPulses:blastPulse.fired,activeBlastPulses:blastPulse.active,boosting:starBoost.active,boostBurned:starBoost.burned,boostRolling,finalTime:finalScene.time,finalFade:finalScene.fade,finalComplete:finalScene.complete,started,opening,openingTime,starTime,starEnded,paused,food,phase:phaseFor(food),rollActive,rollAngle,rollTarget,jetBoost,rollCount,jetsSinceRoll,nextRollJet,travelJets,travelClusters,backgroundStars:starfield.count,cameraDistance:zoom,cameraLag:cameraAnchor.distanceTo(player),cameraPosition:camera.position.toArray(),bodyQuaternion:kali.group.quaternion.toArray(),blackHoleScale:kali.hole.scale.x,nebulaVisible:kali.nebula.visible,arms:kali.arms.length,activeArms:kali.arms.filter(a=>a.target).length,captured:wisps.filter(w=>w.owner!==null&&!w.eaten).length,collected,mealProgress:kali.arms.map(a=>a.elapsed),feeding:kali.arms.filter(a=>a.feeding).length,wisps:wisps.length,wispDistances:wisps.map(w=>w.position.distanceTo(player)),wispScreens:wisps.map(w=>w.position.clone().project(camera).toArray()),jetDistance:JET_DISTANCE,cameraForward:camera.getWorldDirection(new T.Vector3()).toArray(),yaw,pitch,dashTime,recoveryTime,upright:new T.Vector3(0,1,0).applyQuaternion(kali.group.quaternion).y,cameraHeight:camera.position.y-player.y,bumps:0,skinGlow:kali.mantle.material.emissive.b,armSpread:kali.arms.reduce((s,a)=>s+Math.hypot(a.tip.x,a.tip.z),0)/8,position:player.toArray(),velocity:velocity.length(),collapseTime,ended,freeplay,renderCalls:renderer.info.render.calls};}};
+window.kaliDemo={get state(){return {chargeClusters,charge:chargeBoost.amount,charging:chargeBoost.active,chargeArmed:chargeBoost.armed,chargedJet,chargedShots,ionPulse:blastPulse.state,blastJet:blastJet&&(dashTime>0||recoveryTime>0),blastPulses:blastPulse.fired,activeBlastPulses:blastPulse.active,boosting:starBoost.active,boostBurned:starBoost.burned,boostRolling,finalTime:finalScene.time,finalFade:finalScene.fade,finalComplete:finalScene.complete,started,opening,openingTime,starTime,starEnded,paused,food,phase:phaseFor(food),rollActive,rollAngle,rollTarget,jetBoost,rollCount,jetsSinceRoll,nextRollJet,travelJets,travelClusters,backgroundStars:starfield.count,cameraDistance:zoom,cameraLag:cameraAnchor.distanceTo(player),cameraPosition:camera.position.toArray(),bodyQuaternion:kali.group.quaternion.toArray(),blackHoleScale:kali.hole.scale.x,nebulaVisible:kali.nebula.visible,arms:kali.arms.length,activeArms:kali.arms.filter(a=>a.target).length,captured:wisps.filter(w=>w.owner!==null&&!w.eaten).length,collected,mealProgress:kali.arms.map(a=>a.elapsed),feeding:kali.arms.filter(a=>a.feeding).length,wisps:wisps.length,wispDistances:wisps.map(w=>w.position.distanceTo(player)),wispScreens:wisps.map(w=>w.position.clone().project(camera).toArray()),jetDistance:JET_DISTANCE,cameraForward:camera.getWorldDirection(new T.Vector3()).toArray(),yaw,pitch,dashTime,recoveryTime,upright:new T.Vector3(0,1,0).applyQuaternion(kali.group.quaternion).y,cameraHeight:camera.position.y-player.y,bumps:0,skinGlow:kali.mantle.material.emissive.b,armSpread:kali.arms.reduce((s,a)=>s+Math.hypot(a.tip.x,a.tip.z),0)/8,position:player.toArray(),velocity:velocity.length(),collapseTime,ended,freeplay,renderCalls:renderer.info.render.calls};}};
 if(attractMode)begin();
 
 
