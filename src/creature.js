@@ -90,6 +90,8 @@ export function createKali(){
  const diskMat=new T.ShaderMaterial({transparent:true,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending,uniforms:{time:{value:0},opacity:{value:0}},vertexShader:`varying vec2 v;void main(){v=uv*2.-1.;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,fragmentShader:`varying vec2 v;uniform float time;uniform float opacity;void main(){float r=length(v);float a=atan(v.y,v.x);float ring=exp(-pow((r-.49)*21.,2.));float disk=smoothstep(.30,.38,r)*(1.-smoothstep(.4,.94,r));float bands=.6+.4*sin(r*95.-a*3.-time*3.);float flame=.65+.35*sin(a*9.+r*21.-time*2.);vec3 col=mix(vec3(.05,.18,.8),vec3(.45,.86,1.),ring);gl_FragColor=vec4(col*(ring*3.+disk*bands*flame),opacity*(ring+disk)*.8);}`});
  const disk=new T.Mesh(new T.PlaneGeometry(3.5,3.5),diskMat);disk.rotation.x=-1.05;disk.rotation.y=.25;disk.visible=false;disk.renderOrder=6;core.add(disk);
  const photon=new T.Mesh(new T.TorusGeometry(.675,.012,8,100),new T.MeshBasicMaterial({color:0x369ddd,transparent:true,blending:T.AdditiveBlending,depthTest:false}));photon.visible=false;photon.renderOrder=8;core.add(photon);
+ // Move the singularity and its surrounding light together, leaving the mantle anchor in place.
+ const singularity=new T.Group();core.add(singularity);singularity.add(hole,disk,photon);
  let mantleRelax=1;
  function update(time,dt,food,pulse,speed,collapse=0,streamline=0,mantlePressure=-pulse*.32,flush=0,stellarReveal=1){
    const targetRelax=1-streamline;
@@ -239,5 +241,5 @@ export function createKali(){
    const black=collapse>=.65,seedScale=.045+.135*smooth(.65,1,collapse)+1.02*(1-Math.exp(-Math.max(0,food-COLLAPSE)/100));hole.scale.setScalar(seedScale);disk.scale.setScalar(seedScale);photon.scale.setScalar(seedScale);
    hole.visible=disk.visible=photon.visible=black;diskMat.uniforms.time.value=time;diskMat.uniforms.opacity.value=smooth(.65,.72,collapse)*.48;photon.material.opacity=smooth(.65,.72,collapse);photon.quaternion.copy(group.quaternion).invert();
  }
- return {group,arms,core,update,mantle,light,photon,hole,nebula,collar,beak,jaws,eyeGroups,organicEyes};
+ return {group,arms,core,singularity,update,mantle,light,photon,hole,nebula,collar,beak,jaws,eyeGroups,organicEyes};
 }

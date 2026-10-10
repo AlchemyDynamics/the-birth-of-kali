@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {STAR_BOOST_ENABLED,BLAST_JET_MULTIPLIER,blastJetAvailable} from '../src/movement-abilities.js';
-import {IGNITION,JET_SPEED,JET_DURATION,JET_RECOVERY,integrateVelocity} from '../src/simulation.js';
+import {STAR_BOOST_ENABLED,BLAST_JET_MULTIPLIER,blastJetAvailable,chargeBoostAvailable} from '../src/movement-abilities.js';
+import {IGNITION,COLLAPSE,JET_SPEED,JET_DURATION,JET_RECOVERY,integrateVelocity} from '../src/simulation.js';
 test('legacy boost is disabled; blast requires completed ignition and more than eight held stars',()=>{
  assert.equal(STAR_BOOST_ENABLED,false);
  assert.equal(blastJetAvailable(IGNITION-1,true,20),false);
@@ -14,4 +14,13 @@ test('blast travels 25 percent farther with the same burst and water-drag timing
   for(let frame=0;frame<fps*4;frame++){const t=frame*dt,recovery=t<JET_DURATION?0:Math.max(0,1-(t-JET_DURATION)/JET_RECOVERY);integrateVelocity(v,[0,0,0],dt,0,t<JET_DURATION,recovery,multiplier);distance+=Math.hypot(...v)*dt;}return distance;
  }
  for(const fps of [30,60,144])assert.ok(Math.abs(distance(BLAST_JET_MULTIPLIER,fps)/distance(1,fps)-1.25)<.001);
+});
+
+test('blue plasma unlocks at ignition; foom waits for completed black-hole formation',()=>{
+ assert.equal(blastJetAvailable(IGNITION,true,9),true);
+ assert.equal(chargeBoostAvailable(IGNITION,true,9),false);
+ assert.equal(chargeBoostAvailable(COLLAPSE-1,true,9),false);
+ assert.equal(chargeBoostAvailable(COLLAPSE,false,9),false);
+ assert.equal(chargeBoostAvailable(COLLAPSE,true,8),false);
+ assert.equal(chargeBoostAvailable(COLLAPSE,true,9),true);
 });

@@ -14,6 +14,7 @@ export function createChargePlasma(scene,texture){
  const basket=new T.Vector3(),center=new T.Vector3(),start=new T.Vector3(),point=new T.Vector3(),previous=new T.Vector3();
  let flash=0,launchPower=0;
  return {
+  get focalPoint(){return center;},
   fire(power){launchPower=power;flash=.4;},
   update(dt,time,charge,kali,wisps){
    flash=Math.max(0,flash-dt);const burst=flash/.4,visible=charge>0||burst>0;group.visible=arcs.visible=visible;lamp.intensity=0;if(!visible)return;
@@ -22,7 +23,8 @@ export function createChargePlasma(scene,texture){
    // Draw energy inward from the held stars to a compact point inside the arms.
    kali.group.localToWorld(basket.set(0,-1.9,0));center.lerp(basket,.55);
    group.position.copy(center);lamp.position.copy(center);
-   const compression=charge*charge*(3-2*charge),beat=1+compression*(.035*Math.sin(time*23)+.025*Math.sin(time*37)),radius=charge>0?(1.12-.69*compression)*beat:(.25+Math.sin(Math.PI*burst)*.65)*(1+.12*launchPower);
+   const compression=charge*charge*(3-2*charge),beat=1+compression*(.035*Math.sin(time*23)+.025*Math.sin(time*37)),rawRadius=charge>0?(1.12-.69*compression)*beat:(.25+Math.sin(Math.PI*burst)*.65)*(1+.12*launchPower);
+   const radius=Math.max(rawRadius,kali.hole.visible?.64*kali.hole.scale.x*1.25:0);
    core.scale.set(radius*(1+.025*compression*Math.sin(time*29)),radius,radius*(1-.025*compression*Math.sin(time*29)));
    core.rotation.y=time*(.4+charge);coreMaterial.uniforms.time.value=time;coreMaterial.uniforms.charge.value=charge;coreMaterial.uniforms.burst.value=burst;
    halo.scale.setScalar(radius*2.8);halo.material.color.setHex(charge>.7?0x6622d8:0x8844ff);halo.material.opacity=charge>0?.2-.08*compression:.35*burst;
