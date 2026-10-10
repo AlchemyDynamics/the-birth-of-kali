@@ -15,6 +15,7 @@ export function createChargePlasma(scene,texture){
  let flash=0,launchPower=0;
  return {
   get focalPoint(){return center;},
+  get radius(){return group.visible?core.scale.y:0;},
   fire(power){launchPower=power;flash=.4;},
   update(dt,time,charge,kali,wisps){
    flash=Math.max(0,flash-dt);const burst=flash/.4,visible=charge>0||burst>0;group.visible=arcs.visible=visible;lamp.intensity=0;if(!visible)return;

@@ -24,7 +24,8 @@ import {jetAim,travelLightPositions,lightClusterPositions,chargeLightPositions} 
 import {feedingArms} from './simulation.js';
 import {stabilizedRollAngle,ROLL_FINISH_TIME,smallJetRotation,smallJetAngle,SMALL_JET_SETTLE_TIME} from './roll-motion.js';
 import {nearestPathLight,nearerEye} from './attention.js';
-import {updateHorizonProjection} from './horizon-projection.js';
+import {spaceWarpShader} from './space-warp.js';
+import {projectWarpSphere,updateHorizonProjection} from './horizon-projection.js';
 import {proximityBrightness} from './papillae.js';
 import {renderPixelRatio,createRenderQuality} from './render-quality.js';
 import {IGNITION,COLLAPSE,phaseFor,smooth,integrateVelocity,captureLight,nextMeal,advanceFeeding,REACH,steeringRate,SPAWN_DISTANCE,SPAWN_SPREAD,SPAWN_INTERVAL,MAX_WISPS,JET_DISTANCE,JET_SPEED,JET_DURATION,JET_RECOVERY,mantlePressureFor,GRAB_REACH_TIME} from './simulation.js';
@@ -37,7 +38,7 @@ const scene=new T.Scene(),camera=new T.PerspectiveCamera(48,innerWidth/innerHeig
 const starfield=createStarfield(scene);
 const composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));const bloom=new UnrealBloomPass(new T.Vector2(innerWidth,innerHeight),.64,.65,.7);composer.addPass(bloom);composer.addPass(new OutputPass());
 // Keep the event horizon light-absorbing after bloom; bend the nearby disk image.
-const horizon=new ShaderPass({uniforms:{tDiffuse:{value:null},center:{value:new T.Vector2(.5,.5)},radius:{value:0},aspect:{value:innerWidth/innerHeight},amount:{value:0}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`uniform sampler2D tDiffuse;uniform vec2 center;uniform float radius;uniform float aspect;uniform float amount;varying vec2 vUv;void main(){vec2 delta=vUv-center;vec2 metric=delta*vec2(aspect,1.);float d=length(metric);float lens=amount*.035*exp(-pow((d-radius*1.3)/max(radius*.5,.0001),2.));vec2 uv=vUv-delta*lens;vec4 color=texture2D(tDiffuse,uv);float feather=max(radius*.075,fwidth(d));float horizonMask=smoothstep(radius-feather,radius+feather,d);color.rgb*=mix(1.,horizonMask,amount);gl_FragColor=color;}`});composer.addPass(horizon);
+const horizon=new ShaderPass(spaceWarpShader());composer.addPass(horizon);
 const kali=createKali();scene.add(kali.group);
 // No ambient light: every visible reflection is caused by an ember or consumed light.
 const wispLights=Array.from({length:6},()=>{const l=new T.PointLight(0x329bff,0,85,1.25);scene.add(l);return l;});
@@ -224,18 +225,40 @@ function updateOpening(dt){
  const second=spawnWisp(player.clone().addScaledVector(forward,JET_DISTANCE*2).addScaledVector(above,3));second.fadeSeconds=7;second.lightGain=2;}
 }
 function setPause(value){if(!started||collapseTime>=0&&!ended)return;paused=value;chargedQueued=0;chargeBoost.cancel();$('#paused').hidden=!paused;$('#pause').textContent=paused?'▷':'Ⅱ';keys.clear();releaseBoostIfUnheld();pointer.set(0,0);dashQueued=false;}
+function menuOpen(){return $('#controls').open||$('#dev-menu').open;}
+function openDevMenu(){keys.clear();chargedQueued=0;dashQueued=false;chargeBoost.cancel();releaseBoostIfUnheld();pointer.set(0,0);if($('#controls').open)$('#controls').close();$('#dev-menu').showModal();}
+$('#dev-open').onclick=openDevMenu;$('#dev-close').onclick=()=>$('#dev-menu').close();
+for(const button of document.querySelectorAll('[data-checkpoint]'))button.onclick=()=>{
+ const query=new URLSearchParams({checkpoint:button.dataset.checkpoint,cargo:$('#dev-cargo').checked?'12':'0'});
+ location.href=location.pathname+'?'+query;
+};
+function loadCheckpoint(name){
+ if(!['opening','supergiant','singularity'].includes(name))return false;
+ started=true;firstSpawned=true;opening=false;age=20;
+ food=name==='opening'?1:name==='supergiant'?IGNITION:COLLAPSE;
+ starEnded=food>=IGNITION;starTime=starEnded?12:-1;ended=freeplay=food>=COLLAPSE;collapseTime=ended?21:-1;
+ player.set(0,0,0);kali.group.position.copy(player);kali.group.quaternion.identity();swimPose.identity();cameraAnchor.copy(player);
+ facing.set(0,0,-1).applyEuler(new T.Euler(pitch,yaw,0,'YXZ'));
+ camera.position.set(1.8,.9,zoom).applyEuler(new T.Euler(pitch,yaw,0,'YXZ'));camera.lookAt(camera.position.clone().addScaledVector(facing,60));
+ $('#intro').hidden=true;$('#hud').hidden=false;openingDust.visible=openingHaze.visible=false;
+ phase=phaseFor(food);setStage();narrator.clear();
+ if(food===1){const second=spawnWisp(player.clone().addScaledVector(facing,JET_DISTANCE*2).addScaledVector(new T.Vector3(0,1,0).applyQuaternion(camera.quaternion),3));second.fadeSeconds=7;second.lightGain=2;nextSpawn=Infinity;}
+ else{const warmSeconds=Math.min(140,food*.4);for(let i=0;i<warmSeconds;i++)starfield.update(i-warmSeconds,1,food,player,()=>0,0);cluster();nextSpawn=time+3;if(new URLSearchParams(location.search).get('cargo')==='12')for(let i=0;i<12;i++){const w=spawnWisp(player.clone());w.born=time-3;captureLight(kali.arms,w);collected++;}}
+ // Render once before pausing, so the selected character stage is already visible.
+ requestAnimationFrame(()=>setPause(true));return true;
+}
 function reset(){location.href=location.pathname;}
-$('#begin').onclick=begin;$('#resume').onclick=()=>setPause(false);$('#pause').onclick=()=>setPause(!paused);$('#restart').onclick=reset;$('#again').onclick=reset;
+$('#begin').onclick=begin;$('#resume').onclick=()=>{if(audio.enabled)audio.init();setPause(false);};$('#pause').onclick=()=>setPause(!paused);$('#restart').onclick=reset;$('#again').onclick=reset;
 $('#wordmark').onclick=e=>{e.preventDefault();keys.clear();chargedQueued=0;releaseBoostIfUnheld();$('#controls').showModal();};
 $('#sound').onclick=()=>{$('#sound span').textContent=audio.toggle()?'ON':'OFF';narrator.setMuted(!audio.enabled);};
 $('#help').onclick=()=>{$('#controls').showModal();chargedQueued=0;keys.clear();releaseBoostIfUnheld();};$('#close-help').onclick=()=>$('#controls').close();
-window.addEventListener('keydown',e=>{if(finalScene.complete){if(e.code==='KeyR')reset();return;}if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat)return;if((e.code==='Space'||e.code==='ShiftLeft')&&started&&!opening&&dashTime===0&&!paused&&!$('#controls').open){dashQueued=true;dashPointer.copy(pointer);if(e.code==='ShiftLeft')chargeBoost.cancel();if(e.code==='Space'&&canSwim()&&foomAvailable())chargeBoost.arm();}if(e.code==='KeyP'||e.code==='Escape'){if($('#controls').open)return;setPause(!paused);}if(e.code==='KeyM')$('#sound').click();if(e.code==='KeyR'&&!$('#controls').open)reset();keys.add(e.code);});
-window.addEventListener('keyup',e=>{if(e.code==='Space'){const q=chargeBoost.release();if(q>0&&!paused&&!document.hidden&&!$('#controls').open&&canSwim()&&foomAvailable()){chargedQueued=q;dashPointer.copy(pointer);}}keys.delete(e.code);releaseBoostIfUnheld();});
+window.addEventListener('keydown',e=>{if(e.code==='F2'){e.preventDefault();if(!e.repeat){if($('#dev-menu').open)$('#dev-menu').close();else openDevMenu();}return;}if($('#dev-menu').open)return;if(finalScene.complete){if(e.code==='KeyR')reset();return;}if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat)return;if((e.code==='Space'||e.code==='ShiftLeft')&&started&&!opening&&dashTime===0&&!paused&&!menuOpen()){dashQueued=true;dashPointer.copy(pointer);if(e.code==='ShiftLeft')chargeBoost.cancel();if(e.code==='Space'&&canSwim()&&foomAvailable())chargeBoost.arm();}if(e.code==='KeyP'||e.code==='Escape'){if(menuOpen())return;setPause(!paused);}if(e.code==='KeyM')$('#sound').click();if(e.code==='KeyR'&&!menuOpen())reset();keys.add(e.code);});
+window.addEventListener('keyup',e=>{if(e.code==='Space'){const q=chargeBoost.release();if(q>0&&!paused&&!document.hidden&&!menuOpen()&&canSwim()&&foomAvailable()){chargedQueued=q;dashPointer.copy(pointer);}}keys.delete(e.code);releaseBoostIfUnheld();});
 window.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();chargeBoost.cancel();chargedQueued=0;}});window.addEventListener('blur',()=>{chargedQueued=0;keys.clear();releaseBoostIfUnheld();if(started&&collapseTime<0)setPause(true);});
-$('#world').addEventListener('pointermove',e=>{if(!started||opening||paused||$('#controls').open)return;pointer.set(e.clientX/innerWidth*2-1,1-e.clientY/innerHeight*2);});
+$('#world').addEventListener('pointermove',e=>{if(!started||opening||paused||menuOpen())return;pointer.set(e.clientX/innerWidth*2-1,1-e.clientY/innerHeight*2);});
 $('#world').addEventListener('pointerleave',()=>pointer.set(0,0));
 $('#world').addEventListener('wheel',e=>{zoom=T.MathUtils.clamp(zoom+e.deltaY*.009,4.2,24);},{passive:true});
-document.addEventListener('visibilitychange',()=>{last=performance.now();keys.clear();releaseBoostIfUnheld();narrator.setPaused(document.hidden||paused||$('#controls').open);});
+document.addEventListener('visibilitychange',()=>{last=performance.now();keys.clear();releaseBoostIfUnheld();narrator.setPaused(document.hidden||paused||menuOpen());});
 function resizeRendering(){const ratio=renderPixelRatio(innerWidth,innerHeight,devicePixelRatio,renderQuality.scale);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(ratio);renderer.setSize(innerWidth,innerHeight);composer.setPixelRatio(ratio);composer.setSize(innerWidth,innerHeight);starfield.setPixelRatio(ratio);}
 resizeRendering();
 window.addEventListener('resize',()=>{renderQuality.reset();resizeRendering();});
@@ -379,9 +402,9 @@ function updateCinematic(dt){
  }
 }
 function frame(now){
- requestAnimationFrame(frame);const frameMs=now-last,dt=Math.min(frameMs/1000,.04);last=now;
- narrator.setPaused(paused||$('#controls').open||document.hidden);finalScene.setPaused(paused||$('#controls').open||document.hidden,!audio.enabled);
- if(paused||$('#controls').open||document.hidden||finalScene.complete){renderQuality.reset();return;}
+ requestAnimationFrame(frame);const frameMs=now-last,dt=Math.max(0,Math.min(frameMs/1000,.04));last=now;
+ narrator.setPaused(paused||menuOpen()||document.hidden);finalScene.setPaused(paused||menuOpen()||document.hidden,!audio.enabled);
+ if(paused||menuOpen()||document.hidden||finalScene.complete){renderQuality.reset();return;}
  if(time>5&&renderQuality.sample(frameMs))resizeRendering();
  time+=dt;if(started)age+=dt;
  if(opening){updateOpening(dt);return;}
@@ -425,13 +448,15 @@ function frame(now){
  }
  horizon.uniforms.amount.value=smooth(.65,.78,collapse);horizon.uniforms.aspect.value=camera.aspect;horizon.enabled=collapse>.6;
  if(collapse>.6)updateHorizonProjection(camera,kali.hole,horizon.uniforms);
+ horizon.uniforms.chargeRadius.value=chargePlasma.radius?projectWarpSphere(camera,chargePlasma.focalPoint,chargePlasma.radius*1.6,horizon.uniforms.chargeCenter.value):0;
+ horizon.uniforms.chargeAmount.value=horizon.uniforms.chargeRadius.value>0?chargeBoost.amount:0;
  if(started)innerCosmos.draw(time,food,collapse,kali.hole.scale.x);
  composer.render();
 }
 camera.position.set(0,2.3,17);requestAnimationFrame(frame);
 // Read-only telemetry makes full-loop smoke tests possible without bypassing feeding.
 window.kaliDemo={get state(){return {singularityOffset:kali.singularity.position.length(),foomUnlocked:ended&&food>=COLLAPSE,chargeClusters,charge:chargeBoost.amount,charging:chargeBoost.active,chargeArmed:chargeBoost.armed,chargedJet,chargedShots,ionPulse:blastPulse.state,blastJet:blastJet&&(dashTime>0||recoveryTime>0),blastPulses:blastPulse.fired,activeBlastPulses:blastPulse.active,boosting:starBoost.active,boostBurned:starBoost.burned,boostRolling,finalTime:finalScene.time,finalFade:finalScene.fade,finalComplete:finalScene.complete,started,opening,openingTime,starTime,starEnded,paused,food,phase:phaseFor(food),rollActive,rollAngle,rollTarget,jetBoost,rollCount,jetsSinceRoll,nextRollJet,travelJets,travelClusters,backgroundStars:starfield.count,cameraDistance:zoom,cameraLag:cameraAnchor.distanceTo(player),cameraPosition:camera.position.toArray(),bodyQuaternion:kali.group.quaternion.toArray(),blackHoleScale:kali.hole.scale.x,nebulaVisible:kali.nebula.visible,arms:kali.arms.length,activeArms:kali.arms.filter(a=>a.target).length,captured:wisps.filter(w=>w.owner!==null&&!w.eaten).length,collected,mealProgress:kali.arms.map(a=>a.elapsed),feeding:kali.arms.filter(a=>a.feeding).length,wisps:wisps.length,wispDistances:wisps.map(w=>w.position.distanceTo(player)),wispScreens:wisps.map(w=>w.position.clone().project(camera).toArray()),jetDistance:JET_DISTANCE,cameraForward:camera.getWorldDirection(new T.Vector3()).toArray(),yaw,pitch,dashTime,recoveryTime,upright:new T.Vector3(0,1,0).applyQuaternion(kali.group.quaternion).y,cameraHeight:camera.position.y-player.y,bumps:0,skinGlow:kali.mantle.material.emissive.b,armSpread:kali.arms.reduce((s,a)=>s+Math.hypot(a.tip.x,a.tip.z),0)/8,position:player.toArray(),velocity:velocity.length(),collapseTime,ended,freeplay,renderCalls:renderer.info.render.calls};}};
-if(attractMode)begin();
+if(!loadCheckpoint(new URLSearchParams(location.search).get('checkpoint'))&&attractMode)begin();
 
 
 

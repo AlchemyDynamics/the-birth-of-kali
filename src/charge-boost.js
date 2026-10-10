@@ -1,6 +1,6 @@
 import {JET_DISTANCE} from './simulation.js';
 // Holding through recovery banks a single release burst; taps remain ordinary jets.
-export const CHARGE_SECONDS=1, MIN_CHARGE_SECONDS=.12;
+export const CHARGE_SECONDS=1/.75, MIN_CHARGE_SECONDS=.12;
 export const chargeMultiplier=q=>1.4*(1.5+1.5*Math.max(0,Math.min(1,q)));
 // Calibrated with water drag: +40% launch speed and about +80% total travel.
 export const CHARGED_JET_DURATION=.715;
