@@ -1,6 +1,7 @@
 import * as T from 'three';
 import {createKali} from './creature.js';
-import {createGripSimulation,SEGMENTS} from './grip-physics.js';
+import {createGripSimulation,armRadius} from './grip-physics.js';
+import {sampleSoftArm} from './soft-arm.js';
 const $=s=>document.querySelector(s),scene=new T.Scene();scene.background=new T.Color(0x030711);scene.fog=new T.FogExp2(0x030711,.022);
 const renderer=new T.WebGLRenderer({canvas:$('#lab'),antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.4));renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.8;
 const camera=new T.PerspectiveCamera(43,innerWidth/innerHeight,.1,100);camera.position.set(8,-4.7,11.5);
@@ -12,8 +13,14 @@ canvas.addEventListener('pointermove',e=>{const previous=pointers.get(e.pointerI
 for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,e=>pointers.delete(e.pointerId));
 canvas.addEventListener('wheel',e=>{e.preventDefault();orbit.distance=Math.max(5,Math.min(24,orbit.distance*Math.exp(e.deltaY*.001)));},{passive:false});
 scene.add(new T.HemisphereLight(0x86a9de,0x071024,1.2));for(const [x,y,z,color,power] of [[4,5,6,0xb3dfff,80],[-5,0,-4,0x756bd3,95],[0,-5,5,0x78b9ed,35]]){const l=new T.PointLight(color,power,25,2);l.position.set(x,y,z);scene.add(l);}
-const kali=createKali();scene.add(kali.group);const sim=createGripSimulation();
-for(const arm of kali.arms)arm.poseProvider=points=>{const nodes=sim.state.arms[arm.index].points;for(let j=0;j<points.length;j++){const t=j/(points.length-1)*SEGMENTS,a=Math.min(SEGMENTS-1,Math.floor(t)),f=t-a;points[j].set(...nodes[a].map((v,k)=>v+(nodes[a+1][k]-v)*f));}};
+const kali=createKali();scene.add(kali.group);const sim=createGripSimulation({exploration:true});
+for(const arm of kali.arms){
+ arm.radiusProvider=u=>armRadius(u)*(sim.state.arms[arm.index].radiusScale||1);
+ arm.poseProvider=points=>sampleSoftArm(sim.state.arms[arm.index].points,points,(p,u)=>{
+  if(u<.12)return;const b=sim.state.ball,d=p.map((v,k)=>v-b.p[k]),length=Math.hypot(...d),minimum=b.radius+arm.radiusProvider(u);
+  if(length<minimum&&length>1e-8)for(let k=0;k<3;k++)p[k]=b.p[k]+d[k]*minimum/length;
+ });
+}
 const paint=document.createElement('canvas');paint.width=1024;paint.height=512;const ctx=paint.getContext('2d');ctx.fillStyle='#08090e';ctx.fillRect(0,0,1024,512);for(const x of [256,768]){ctx.fillStyle='#eee7d9';ctx.beginPath();ctx.ellipse(x,256,110,108,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#101018';ctx.font='bold 160px Georgia';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('8',x,264);}const texture=new T.CanvasTexture(paint);texture.colorSpace=T.SRGBColorSpace;
 const ball=new T.Mesh(new T.SphereGeometry(sim.state.ball.radius,64,40),new T.MeshPhysicalMaterial({map:texture,roughness:.17,metalness:0,clearcoat:1,clearcoatRoughness:.08}));scene.add(ball);
 const field=new T.Mesh(new T.SphereGeometry(1,40,28),new T.ShaderMaterial({transparent:true,depthWrite:false,blending:T.AdditiveBlending,uniforms:{power:{value:0},time:{value:0}},vertexShader:'varying vec3 n;varying vec3 eye;varying vec3 p;void main(){p=position;n=normalize(normalMatrix*normal);vec4 v=modelViewMatrix*vec4(position,1.);eye=-v.xyz;gl_Position=projectionMatrix*v;}',fragmentShader:'uniform float power;uniform float time;varying vec3 n;varying vec3 eye;varying vec3 p;void main(){float rim=pow(1.-abs(dot(normalize(n),normalize(eye))),3.);float vein=pow(.5+.5*sin(p.y*25.+sin(p.x*12.)+time*2.),14.);gl_FragColor=vec4(vec3(.38,.15,.95)*(rim+vein*.25)*power,(rim*.35+vein*.03)*power);}' }));scene.add(field);

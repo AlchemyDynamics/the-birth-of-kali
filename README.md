@@ -68,3 +68,19 @@ Choose **Grasp & squeeze**, adjust **Muscle drive**, and compare total contact l
 The solver uses fixed time steps, bounded muscle forces, arm-length constraints, adjacent-arm separation, and compliant two-way sphere contact. The torso is anchored, the contact is frictionless, and the grasp target is fixed. Values are comparative normalized units, not calibrated newtons or material pressure. The ball does not fracture. The containment field is an artistic preview, not a gravity simulation.
 
 Run `node --test tests/grip-physics.test.mjs` for balanced-load, strength-response, release, disturbance, reset, and frame-rate consistency checks. The main game continues to use its existing animation controller.
+
+## Soft arms and passage study
+
+The grip study now uses distributed bending resistance, muscle shortening with compensating thickness, and cubic spline rendering instead of straight interpolation between solver nodes. Each released arm relaxes independently. Exploratory upper-arm bends are driven by a small local sensorimotor controller.
+
+Open `tube-lab.html` from the grip lab for **Through the opening**. Choose **Explore & enter**, orbit the cutaway tube, adjust its diameter, or remove sucker grip. Seven sensing regions on each arm feed contact, chemical-cue and strain information into local explore/sample/brace states. Gold markers are synthetic chemical cue patches; disabling them changes the search. Cyan markers identify temporary sealed contacts. Upper-arm curvature and stiffness respond as well as the tips.
+
+The model combines deforming arm chains, unilateral tube-wall projection, bounded length constraints and an attachment-driven axial muscle actuator. It does not derive full 3D body motion from rod reaction forces. A volume-preserving mantle envelope narrows and lengthens, then recovers after exit. The rigid beak and a separate finite tissue-strain limit block small apertures; these are demonstration parameters, not measured species thresholds. Tube arms currently retain their tapered radial profile while changing length. Full inter-arm/self collision, mantle organs/cavity water, fluid dynamics, and a full neural network are not implemented. The fixed-step test suite checks passage, recovery, extension, volume-envelope consistency, no propulsion without grip, blocked openings, distributed sensing, cue response, frame-rate independence and spline clearance.
+
+Research informing the reduced model:
+- [Kier and Stella, 2007: octopus arm musculature](https://pubmed.ncbi.nlm.nih.gov/17624930/): longitudinal, transverse and oblique muscles; coupled shape changes and stiffness.
+- [Sivitilli et al., 2023: sensory-guided arm search](https://pubmed.ncbi.nlm.nih.gov/37793413/): local sucker coordination in visually occluded exploration.
+- [Katija et al., 2025: wild octopus locomotion](https://www.nature.com/articles/s41586-025-09379-z): localized load-bearing contacts and proximal strain. Applying those principles to this tube gait is an engineering interpretation.
+- [Kennedy et al., 2020: arm flexibility](https://pmc.ncbi.nlm.nih.gov/articles/PMC7704652/): localized bending/twisting and oral-surface orientation.
+
+Run `node --test tests/grip-physics.test.mjs tests/tube-physics.test.mjs`. The study is a voluntary locomotion experiment. Saedus's forced extraction, inside-out universe transformation and burning injury are separate directed scene work, not ordinary octopus biomechanics or effects implemented in this laboratory.

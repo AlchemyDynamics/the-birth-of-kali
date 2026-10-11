@@ -207,16 +207,16 @@ export function createKali(){
        const u=j/(rings-1);tangent.copy(points[Math.min(j+1,rings-1)]).sub(points[Math.max(0,j-1)]).normalize();normal.copy(j>0?arm.frames[j-1].normal:dir);normal.addScaledVector(tangent,-normal.dot(tangent));if(normal.lengthSq()<.001)normal.copy(j>0?arm.frames[j-1].side:Z).addScaledVector(tangent,-(j>0?arm.frames[j-1].side:Z).dot(tangent));normal.normalize();side.crossVectors(tangent,normal).normalize();
        // Close the final ring to a point; a constant minimum radius left an
        // open, visibly chopped-off tube at the end of every curled arm.
-       const radius=(.43*Math.pow(1-u,1.3)+.017)*(1-smooth(.88,1,u));
+       const radius=arm.radiusProvider?.(u)??((.43*Math.pow(1-u,1.3)+.017)*(1-smooth(.88,1,u)));
        arm.frames[j].side.copy(side);arm.frames[j].normal.copy(normal);arm.frames[j].radius=radius;
        for(let k=0;k<=sides;k++){const theta=k/sides*TAU;v.copy(points[j]).addScaledVector(side,Math.cos(theta)*radius).addScaledVector(normal,Math.sin(theta)*radius);attr.setXYZ(j*(sides+1)+k,v.x,v.y,v.z);}
      }
      attr.needsUpdate=true;arm.mesh.geometry.computeVertexNormals();
      for(let j=0;j<20;j++)for(let row=0;row<2;row++){
        const idx=3+j*2,frame=arm.frames[idx],p=points[idx];
-       const cupNormal=frame.normal.clone().negate(),cupSide=frame.side.clone();
+       const cupNormal=frame.normal.clone().multiplyScalar(arm.suckerOutward?1:-1),cupSide=frame.side.clone();
        // Roll the sucker surface inward around the arm, independent of world orientation.
-       if(streamline>0){
+       if(streamline>0&&!arm.suckerOutward){
          const axis=points[idx+1].clone().sub(points[idx-1]).normalize();
          const inward=new T.Vector3(-p.x,0,-p.z).addScaledVector(axis,p.x*axis.x+p.z*axis.z);
          if(inward.lengthSq()>.0001){
@@ -243,5 +243,5 @@ export function createKali(){
    const black=collapse>=.65,seedScale=.045+.135*smooth(.65,1,collapse)+1.02*(1-Math.exp(-Math.max(0,food-COLLAPSE)/100));hole.scale.setScalar(seedScale);disk.scale.setScalar(seedScale);photon.scale.setScalar(seedScale);
    hole.visible=disk.visible=photon.visible=black;diskMat.uniforms.time.value=time;diskMat.uniforms.opacity.value=smooth(.65,.72,collapse)*.48;photon.material.opacity=smooth(.65,.72,collapse);photon.quaternion.copy(group.quaternion).invert();
  }
- return {group,arms,core,singularity,update,mantle,light,photon,hole,nebula,collar,beak,jaws,eyeGroups,organicEyes};
+ return {group,arms,core,singularity,update,mantle,light,photon,hole,nebula,collar,beak,jaws,eyeGroups,organicEyes,web};
 }
