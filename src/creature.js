@@ -199,6 +199,8 @@ export function createKali(){
        const limit=normalLength*1.07;
        if(length>limit){const root=points[0];for(let j=1;j<rings;j++)points[j].sub(root).multiplyScalar(limit/length).add(root);}
      }
+     // Optional external soft-body controller for the isolated grip laboratory.
+     arm.poseProvider?.(points);
      arm.tip.copy(points[rings-1]);
      const attr=arm.mesh.geometry.attributes.position;
      for(let j=0;j<rings;j++){

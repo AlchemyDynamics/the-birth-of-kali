@@ -18,3 +18,5 @@ body.demo-ended header,body.demo-ended #caption,body.demo-ended #cinema-top,body
 body.demo-ended #world{cursor:default}
 
 #dev-open{position:fixed;left:24px;bottom:20px;z-index:12;padding:9px 12px;font-size:10px;letter-spacing:.18em;background:#070e1bdd;color:#a6b8d2;border:1px solid #28415e;border-radius:5px}#dev-menu{max-height:85vh;overflow:auto}#dev-menu::backdrop{background:#000c}.dev-cargo{display:flex;gap:12px;align-items:center;font-size:13px;line-height:1.5;color:#b3c6df;margin:22px 0}.dev-checkpoints{display:grid;gap:10px}.dev-checkpoints button{text-align:left;padding:16px;border:1px solid #28415e;border-radius:6px;background:#0b1424;color:#dcecff}.dev-checkpoints button:hover{background:#16283e;border-color:#77bbff}.dev-checkpoints b,.dev-checkpoints span{display:block}.dev-checkpoints span{font-size:12px;color:#8fa9c8;margin-top:6px}
+
+.dev-lab-link{display:block;color:#b9a7ff;font-size:13px;padding:12px 0;text-decoration:none}.dev-lab-link:hover{color:#ddd4ff}

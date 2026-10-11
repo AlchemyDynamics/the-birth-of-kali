@@ -58,3 +58,13 @@ Each physical cluster receives a coordinated set of pitches from D-major pentato
 Theory references: [Open Music Theory: Collections](https://viva.pressbooks.pub/openmusictheory/chapter/collections/), [Music Theory for the 21st-Century Classroom: Sus Chords](https://musictheory.pugetsound.edu/mt21c/SimpleSusChords.html). Run `node --test tests/harmony.test.mjs` for the pitch and voicing checks.
 
 Developer checkpoints: click DEV at the lower left or press F2 to jump past the opening (1 light), Blue Supergiant (75), or black-hole cutscene (200). Each jump opens a fresh session, paused and ready to continue. The optional 12 held lights make stage abilities immediately testable. R returns to the full opening. Direct links use `?checkpoint=opening`, `?checkpoint=supergiant&cargo=12`, or `?checkpoint=singularity&cargo=12`. Localized screen-space refraction tracks the black hole while orbiting and migrating; a weaker field bends light inside the charging area.
+
+## Grip laboratory
+
+Open `grip-lab.html`, or choose **Open grip laboratory** in the game's DEV menu. This separate body study reuses Kali's rendered creature with eight simulated arms surrounding a dynamic, rigid pool ball.
+
+Choose **Grasp & squeeze**, adjust **Muscle drive**, and compare total contact load with net force. Opposing loads can squeeze the ball while nearly cancelling its net force. Push the ball or release one arm to disturb the grip; release all arms, pause, and reset to compare states. Drag to orbit, pinch or scroll to zoom, or press Space to grasp/release. The optional violet containment field responds to measured contact load.
+
+The solver uses fixed time steps, bounded muscle forces, arm-length constraints, adjacent-arm separation, and compliant two-way sphere contact. The torso is anchored, the contact is frictionless, and the grasp target is fixed. Values are comparative normalized units, not calibrated newtons or material pressure. The ball does not fracture. The containment field is an artistic preview, not a gravity simulation.
+
+Run `node --test tests/grip-physics.test.mjs` for balanced-load, strength-response, release, disturbance, reset, and frame-rate consistency checks. The main game continues to use its existing animation controller.
